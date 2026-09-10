@@ -51,7 +51,7 @@ model News {
   imageUrl        String?
   sourceName      String?
   sourceUrl       String?
-  externalId      String?
+  externalId      String
   language        Language   @default(HI)
   status          NewsStatus @default(DRAFT)
   isFeatured      Boolean    @default(false)
@@ -63,7 +63,7 @@ model News {
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  @@unique([sourceUrl])
+  @@unique([externalId])
   @@index([categoryId])
   @@index([language])
   @@index([status])
