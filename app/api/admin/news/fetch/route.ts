@@ -4,7 +4,7 @@ import { seedCategories } from "@/lib/category-seeder";
 
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+export async function GET() {
   try {
     await seedCategories();
 
@@ -12,7 +12,7 @@ export async function POST() {
 
     return NextResponse.json({
       success: true,
-      message: "News fetched successfully.",
+      message: "News fetched and saved successfully.",
       result
     });
   } catch (error) {
@@ -21,7 +21,11 @@ export async function POST() {
     return NextResponse.json(
       {
         success: false,
-        message: "Unable to fetch news."
+        message: "Unable to fetch news.",
+        error:
+          process.env.NODE_ENV === "development"
+            ? String(error)
+            : undefined
       },
       {
         status: 500
