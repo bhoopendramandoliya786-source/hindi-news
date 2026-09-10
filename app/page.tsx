@@ -103,14 +103,17 @@ export default async function HomePage() {
                       {item.sourceName || "News Source"}
                     </span>
 
-                    <a
-                      href={item.sourceUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
-                    >
-                      और पढ़ें →
-                    </a>
+                    {item.sourceUrl && (
+  <a
+    href={item.sourceUrl}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
+  >
+    और पढ़ें →
+  </a>
+)}
+                    
                   </div>
                 </div>
               </article>
