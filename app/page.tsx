@@ -1,25 +1,20 @@
-const demoNews = [
-  {
-    category: "भारत",
-    title: "भारत की बड़ी खबरें जल्द यहाँ दिखाई देंगी",
-    description:
-      "News API और हमारे database को जोड़ने के बाद यहाँ वास्तविक खबरें दिखाई जाएंगी।"
-  },
-  {
-    category: "राजस्थान",
-    title: "राजस्थान की ताज़ा खबरें एक जगह",
-    description:
-      "राजस्थान से जुड़ी महत्वपूर्ण खबरों के लिए अलग category तैयार की जाएगी।"
-  },
-  {
-    category: "टेक्नोलॉजी",
-    title: "टेक्नोलॉजी की नई और महत्वपूर्ण खबरें",
-    description:
-      "Technology news के लिए अलग section और search सुविधा भी होगी।"
-  }
-];
+import { getLatestNews } from "@/lib/news-service";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+function formatDate(date: Date | null) {
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat("hi-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "Asia/Kolkata"
+  }).format(date);
+}
+
+export default async function HomePage() {
+  const news = await getLatestNews(20);
+
   return (
     <main>
       <section className="bg-gradient-to-br from-red-50 via-white to-orange-50">
@@ -57,36 +52,71 @@ export default function HomePage() {
           </span>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {demoNews.map((news) => (
-            <article
-              key={news.title}
-              className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-1 hover:shadow-lg"
-            >
-              <div className="flex h-48 items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500">
-                News Image
-              </div>
+        {news.length === 0 ? (
+          <div className="rounded-xl bg-gray-100 p-10 text-center text-gray-600">
+            अभी कोई खबर उपलब्ध नहीं है।
+          </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-3">
+            {news.map((item) => (
+              <article
+                key={item.id}
+                className="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 transition hover:-translate-y-1 hover:shadow-lg"
+              >
+                {item.imageUrl ? (
+                  <img
+                    src={item.imageUrl}
+                    alt={item.title}
+                    className="h-48 w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300 text-gray-500">
+                    News Image
+                  </div>
+                )}
 
-              <div className="p-5">
-                <span className="text-sm font-bold text-red-600">
-                  {news.category}
-                </span>
+                <div className="p-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-red-600">
+                      {item.category.name}
+                    </span>
 
-                <h3 className="mt-2 text-xl font-bold leading-7 text-gray-950">
-                  {news.title}
-                </h3>
+                    {item.publishedAt && (
+                      <span className="text-xs text-gray-500">
+                        {formatDate(item.publishedAt)}
+                      </span>
+                    )}
+                  </div>
 
-                <p className="mt-3 leading-6 text-gray-600">
-                  {news.description}
-                </p>
+                  <h3 className="mt-2 text-xl font-bold leading-7 text-gray-950">
+                    {item.title}
+                  </h3>
 
-                <button className="mt-5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700">
-                  और पढ़ें →
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+                  {item.description && (
+                    <p className="mt-3 line-clamp-3 leading-6 text-gray-600">
+                      {item.description}
+                    </p>
+                  )}
+
+                  <div className="mt-5 flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-gray-500">
+                      {item.sourceName || "News Source"}
+                    </span>
+
+                    <a
+                      href={item.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
+                    >
+                      और पढ़ें →
+                    </a>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
     </main>
   );
