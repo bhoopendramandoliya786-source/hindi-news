@@ -6,7 +6,34 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
+    const setupSecret = process.env.ADMIN_SETUP_SECRET;
+
+    if (!setupSecret) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Admin setup is not configured."
+        },
+        { status: 500 }
+      );
+    }
+
     const body = await request.json();
+
+    const secret =
+      typeof body.secret === "string"
+        ? body.secret
+        : "";
+
+    if (secret !== setupSecret) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "Unauthorized."
+        },
+        { status: 401 }
+      );
+    }
 
     const email =
       typeof body.email === "string"
@@ -93,5 +120,4 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-  
+        }
