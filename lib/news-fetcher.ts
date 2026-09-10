@@ -47,10 +47,8 @@ function normalizeArticle(
 }
 
 export async function fetchIndiaNews() {
-  const articles = await getTopHeadlines({
-    country: "in",
-    pageSize: 20
-  });
+  const articles = await getTopHeadlines();
+  
 
   const normalized = articles
     .map(normalizeArticle)
