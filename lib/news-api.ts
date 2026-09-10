@@ -32,36 +32,23 @@ function getApiKey() {
   return key;
 }
 
-export async function getTopHeadlines(options?: {
-  country?: string;
-  category?: string;
-  pageSize?: number;
-}) {
-  const country = options?.country ?? "in";
-  const category = options?.category;
-  const pageSize = Math.min(options?.pageSize ?? 20, 100);
-
+export async function getTopHeadlines() {
   const params = new URLSearchParams({
-    country,
-    pageSize: String(pageSize),
+    q: "India OR Rajasthan OR Jaipur",
+    language: "en",
+    sortBy: "publishedAt",
+    pageSize: "20",
     apiKey: getApiKey()
   });
 
-  if (category) {
-    params.set("category", category);
-  }
-
   const response = await fetch(
-    `${NEWS_API_BASE_URL}/top-headlines?${params.toString()}`,
+    `${NEWS_API_BASE_URL}/everything?${params.toString()}`,
     {
       cache: "no-store"
     }
   );
 
   const data = (await response.json()) as NewsApiResponse;
-
-  console.log("NEWS API STATUS:", response.status);
-  console.log("NEWS API RESPONSE:", data);
 
   if (!response.ok) {
     throw new Error(
@@ -72,6 +59,13 @@ export async function getTopHeadlines(options?: {
   if (data.status !== "ok") {
     throw new Error(data.message || "News API returned an error.");
   }
+
+  console.log(
+    "NewsAPI results:",
+    data.totalResults,
+    "articles:",
+    data.articles?.length ?? 0
+  );
 
   return data.articles ?? [];
 }
