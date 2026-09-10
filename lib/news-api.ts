@@ -14,8 +14,10 @@ export type NewsApiArticle = {
 
 type NewsApiResponse = {
   status: string;
-  totalResults: number;
-  articles: NewsApiArticle[];
+  totalResults?: number;
+  articles?: NewsApiArticle[];
+  code?: string;
+  message?: string;
 };
 
 const NEWS_API_BASE_URL = "https://newsapi.org/v2";
@@ -56,15 +58,20 @@ export async function getTopHeadlines(options?: {
     }
   );
 
-  if (!response.ok) {
-    throw new Error(`News API request failed: ${response.status}`);
-  }
-
   const data = (await response.json()) as NewsApiResponse;
 
-  if (data.status !== "ok") {
-    throw new Error("News API returned an error.");
+  console.log("NEWS API STATUS:", response.status);
+  console.log("NEWS API RESPONSE:", data);
+
+  if (!response.ok) {
+    throw new Error(
+      data.message || `News API request failed: ${response.status}`
+    );
   }
 
-  return data.articles;
+  if (data.status !== "ok") {
+    throw new Error(data.message || "News API returned an error.");
+  }
+
+  return data.articles ?? [];
 }
