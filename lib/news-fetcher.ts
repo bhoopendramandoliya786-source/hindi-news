@@ -9,10 +9,21 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
+// हर कैटेगरी के लिए हाई-क्वालिटी HD बैकअप इमेज (अगर RSS में फ़ोटो न हो तो यह दिखेगी)
+const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
+  sports: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800&auto=format&fit=crop&q=80",
+  technology: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
+  business: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80",
+  entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80",
+  india: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=800&auto=format&fit=crop&q=80",
+  world: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&auto=format&fit=crop&q=80",
+  rajasthan: "https://images.unsplash.com/photo-1599661046289-e31897846e41?w=800&auto=format&fit=crop&q=80",
+};
+
 const FEEDS: Record<string, { url: string; source: string }> = {
   india: {
-    url: "https://www.amarujala.com/rss/national-news.xml",
-    source: "अमर उजाला",
+    url: "https://navbharattimes.indiatimes.com/rssfeedsdefault.cms",
+    source: "नवभारत टाइम्स",
   },
   sports: {
     url: "https://www.amarujala.com/rss/sports-news.xml",
@@ -59,17 +70,13 @@ function extractTag(xml: string, tag: string): string {
   return match ? cleanHtml(match[1]) : "";
 }
 
-// इमेज ढूँढने का मजबूत फ़ंक्शन
 function extractImageUrl(xml: string): string | null {
-  // 1. enclosure टैग (अमर उजाला और भास्कर का मुख्य इमेज टैग)
   const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
   if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
 
-  // 2. media:content टैग
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
   if (mediaMatch && mediaMatch[1] && mediaMatch[1].startsWith("http")) return mediaMatch[1];
 
-  // 3. description या content के अंदर <img src="...">
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
   if (imgMatch && imgMatch[1] && imgMatch[1].startsWith("http")) return imgMatch[1];
 
@@ -115,7 +122,9 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
         description = title;
       }
 
-      const imageUrl = extractImageUrl(itemXml);
+      // अगर RSS में फ़ोटो मिली तो वह, नहीं तो कैटेगरी की प्रीमियम डिफ़ॉल्ट फ़ोटो
+      const rawImage = extractImageUrl(itemXml);
+      const imageUrl = rawImage || CATEGORY_DEFAULT_IMAGES[categorySlug] || CATEGORY_DEFAULT_IMAGES.india;
 
       articles.push({
         title,
@@ -128,7 +137,7 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
         categorySlug,
       });
 
-      if (articles.length >= 5) break;
+      if (articles.length >= 4) break;
     }
 
     return articles;
@@ -153,4 +162,4 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   }
 
   return allNews;
-      }
+        }
