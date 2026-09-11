@@ -14,14 +14,14 @@ export default async function AdminPage() {
 
   const user = await db.user.findUnique({
     where: {
-      id: session.value
+      id: session.value,
     },
     select: {
       id: true,
       name: true,
       email: true,
-      role: true
-    }
+      role: true,
+    },
   });
 
   if (!user || user.role !== "ADMIN") {
@@ -64,8 +64,6 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
-          {/* NEWS */}
-
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">📰</div>
 
@@ -84,8 +82,6 @@ export default async function AdminPage() {
               Manage News
             </a>
           </div>
-
-          {/* CATEGORIES */}
 
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">📂</div>
@@ -106,8 +102,6 @@ export default async function AdminPage() {
             </a>
           </div>
 
-          {/* SETTINGS */}
-
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">⚙️</div>
 
@@ -127,8 +121,6 @@ export default async function AdminPage() {
             </a>
           </div>
         </div>
-
-        {/* ACCOUNT INFORMATION */}
 
         <div className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
           <h3 className="text-xl font-black text-gray-950">
@@ -171,14 +163,3 @@ export default async function AdminPage() {
     </main>
   );
 }
-
-
-अब GitHub में इस पूरे पुराने page.tsx को हटाकर यही code डालो → Commit changes.
-
-Vercel deploy होने के बाद Dashboard में तीनों buttons चलेंगे:
-
-📰 Manage News → /admin/news
-📂 Manage Categories → /admin/categories
-⚙️ Settings → /admin/settings
-
-अभी बस यही commit करो। फिर हम अगला हिस्सा करेंगे।
