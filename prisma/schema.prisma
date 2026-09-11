@@ -78,3 +78,20 @@ model News {
   @@index([isFeatured])
   @@index([isBreaking])
 }
+
+model SiteSettings {
+  id              String   @id @default("default")
+  siteName        String   @default("Hindi News")
+  siteDescription String?
+  logoUrl         String?
+  contactEmail    String?
+  contactPhone    String?
+  address         String?
+  websiteUrl      String?
+  facebookUrl     String?
+  instagramUrl    String?
+  youtubeUrl      String?
+  breakingEnabled Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
