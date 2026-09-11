@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { prisma } from "@/lib/db";
-import { notFound } from "next/navigation";
+import db from "@/lib/db";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -9,8 +8,8 @@ interface Props {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
 
-  // डेटाबेस से कैटेगरी और उससे जुड़ी खबरें निकालें
-  const category = await prisma.category.findFirst({
+  // डेटाबेस से कैटेगरी और खबरें निकालें
+  const category = await (db as any).category.findFirst({
     where: {
       slug: slug,
     },
@@ -92,4 +91,4 @@ export default async function CategoryPage({ params }: Props) {
       )}
     </main>
   );
-}
+              }
