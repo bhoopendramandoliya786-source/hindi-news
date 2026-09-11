@@ -1,5 +1,5 @@
 import Link from "next/link";
-import db from "@/lib/db";
+import { db } from "@/lib/db";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -8,7 +8,7 @@ interface Props {
 export default async function CategoryPage({ params }: Props) {
   const { slug } = await params;
 
-  // डेटाबेस से कैटेगरी और खबरें निकालें
+  // डेटाबेस से कैटेगरी और संबंधित खबरें निकालें
   const category = await (db as any).category.findFirst({
     where: {
       slug: slug,
@@ -91,4 +91,4 @@ export default async function CategoryPage({ params }: Props) {
       )}
     </main>
   );
-              }
+}
