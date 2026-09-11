@@ -40,12 +40,21 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
   if (!feedUrl) return [];
 
   try {
-    const res = await fetch(feedUrl, { cache: "no-store" });
+    // 5 सेकंड का टाइमआउट ताकि रिक्वेस्ट कभी हैंग न हो
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+    const res = await fetch(feedUrl, { 
+      cache: "no-store", 
+      signal: controller.signal 
+    });
+    clearTimeout(timeoutId);
+
     if (!res.ok) return [];
 
     const xmlText = await res.text();
     const items = xmlText.split("<item>");
-    items.shift(); // remove header before first item
+    items.shift();
 
     const articles: NormalizedNews[] = [];
 
@@ -72,23 +81,29 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
         categorySlug,
       });
 
-      if (articles.length >= 6) break; // हर कैटेगरी से 6 ताज़ा खबरें
+      if (articles.length >= 4) break; // हर कैटेगरी से ताज़ा 4 खबरें (ताकि फास्ट रहे)
     }
 
     return articles;
   } catch (err) {
-    console.error(`Fetch failed for ${categorySlug}:`, err);
+    console.error(`Fetch timeout or failed for ${categorySlug}:`, err);
     return [];
   }
 }
 
 export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   const categories = Object.keys(FEEDS);
-  const allNews: NormalizedNews[] = [];
+  
+  // एक के बाद एक करने के बजाय सभी कैटेगरी एक साथ पैरेलल (Fast) लोड होंगी
+  const results = await Promise.allSettled(
+    categories.map((cat) => fetchCategoryNews(cat))
+  );
 
-  for (const cat of categories) {
-    const news = await fetchCategoryNews(cat);
-    allNews.push(...news);
+  const allNews: NormalizedNews[] = [];
+  for (const r of results) {
+    if (r.status === "fulfilled") {
+      allNews.push(...r.value);
+    }
   }
 
   return allNews;
