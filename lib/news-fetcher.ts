@@ -9,24 +9,50 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-const FEEDS: Record<string, string> = {
-  india: "https://news.google.com/rss/headlines/section/topic/NATION?hl=hi&gl=IN&ceid=IN:hi",
-  sports: "https://news.google.com/rss/headlines/section/topic/SPORTS?hl=hi&gl=IN&ceid=IN:hi",
-  business: "https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=hi&gl=IN&ceid=IN:hi",
-  technology: "https://news.google.com/rss/headlines/section/topic/TECHNOLOGY?hl=hi&gl=IN&ceid=IN:hi",
-  entertainment: "https://news.google.com/rss/headlines/section/topic/ENTERTAINMENT?hl=hi&gl=IN&ceid=IN:hi",
-  world: "https://news.google.com/rss/headlines/section/topic/WORLD?hl=hi&gl=IN&ceid=IN:hi",
-  rajasthan: "https://news.google.com/rss/search?q=%E0%A4%B0%E0%A4%BE%E0%A4%9C%E0%A4%B8%E0%A5%8D%E0%A4%A5%E0%A4%BE%E0%A4%A8&hl=hi&gl=IN&ceid=IN:hi",
+// दैनिक भास्कर और अमर उजाला के फ़ीड्स (साफ़ टेक्स्ट + असली इमेज के साथ)
+const FEEDS: Record<string, { url: string; source: string }> = {
+  india: {
+    url: "https://www.amarujala.com/rss/national-news.xml",
+    source: "अमर उजाला",
+  },
+  sports: {
+    url: "https://www.amarujala.com/rss/sports-news.xml",
+    source: "अमर उजाला",
+  },
+  business: {
+    url: "https://www.amarujala.com/rss/business-news.xml",
+    source: "अमर उजाला",
+  },
+  technology: {
+    url: "https://www.amarujala.com/rss/technology-news.xml",
+    source: "अमर उजाला",
+  },
+  entertainment: {
+    url: "https://www.amarujala.com/rss/entertainment-news.xml",
+    source: "अमर उजाला",
+  },
+  world: {
+    url: "https://www.amarujala.com/rss/world-news.xml",
+    source: "अमर उजाला",
+  },
+  rajasthan: {
+    url: "https://feed.bhaskar.com/rss/1154", // दैनिक भास्कर राजस्थान
+    source: "दैनिक भास्कर",
+  },
 };
 
-function cleanHtml(text: string): string {
-  return text
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gi, "$1")
+// HTML टैग्स और कचरा हटाने के लिए
+function cleanHtml(raw: string): string {
+  if (!raw) return "";
+  return raw
+    .replace(/<!\[CDATA\[(.*?)\]\]>/gis, "$1")
     .replace(/<[^>]+>/g, "")
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&quot;/gi, '"')
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
     .trim();
 }
 
@@ -35,18 +61,36 @@ function extractTag(xml: string, tag: string): string {
   return match ? cleanHtml(match[1]) : "";
 }
 
+function extractImageUrl(xml: string): string | null {
+  // 1. Check <enclosure url="..." />
+  const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
+  if (encMatch && encMatch[1]) return encMatch[1];
+
+  // 2. Check <media:content url="..." />
+  const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
+  if (mediaMatch && mediaMatch[1]) return mediaMatch[1];
+
+  // 3. Check <img src="..." /> inside description/content
+  const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
+  if (imgMatch && imgMatch[1]) return imgMatch[1];
+
+  return null;
+}
+
 export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> {
-  const feedUrl = FEEDS[categorySlug];
-  if (!feedUrl) return [];
+  const config = FEEDS[categorySlug];
+  if (!config) return [];
 
   try {
-    // 5 सेकंड का टाइमआउट ताकि रिक्वेस्ट कभी हैंग न हो
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-    const res = await fetch(feedUrl, { 
-      cache: "no-store", 
-      signal: controller.signal 
+    const res = await fetch(config.url, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+      },
     });
     clearTimeout(timeoutId);
 
@@ -59,42 +103,46 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
     const articles: NormalizedNews[] = [];
 
     for (const itemXml of items) {
-      const fullTitle = extractTag(itemXml, "title");
-      if (!fullTitle) continue;
+      const title = extractTag(itemXml, "title");
+      if (!title) continue;
 
-      const parts = fullTitle.split(" - ");
-      const sourceName = parts.length > 1 ? parts.pop()?.trim() || "Google News" : "Google News";
-      const title = parts.join(" - ").trim() || fullTitle;
+      const linkMatch = itemXml.match(/<link[^>]*>([\\s\\S]*?)<\/link>/i);
+      const link = linkMatch ? cleanHtml(linkMatch[1]) : "";
 
-      const link = extractTag(itemXml, "link") || "";
       const pubDateStr = extractTag(itemXml, "pubDate");
-      const description = extractTag(itemXml, "description") || title;
+      let description = extractTag(itemXml, "description") || title;
+
+      // अगर विवरण में फिर भी लिंक या बहुत छोटा टेक्स्ट रह जाए तो टाइटल रखें
+      if (description.includes("http") || description.length < 15) {
+        description = title;
+      }
+
+      const imageUrl = extractImageUrl(itemXml);
 
       articles.push({
         title,
         description,
-        imageUrl: null,
-        sourceName,
+        imageUrl,
+        sourceName: config.source,
         sourceUrl: link,
         publishedAt: pubDateStr ? new Date(pubDateStr) : new Date(),
         externalId: link || `${title}-${Date.now()}`,
         categorySlug,
       });
 
-      if (articles.length >= 4) break; // हर कैटेगरी से ताज़ा 4 खबरें (ताकि फास्ट रहे)
+      if (articles.length >= 4) break;
     }
 
     return articles;
   } catch (err) {
-    console.error(`Fetch timeout or failed for ${categorySlug}:`, err);
+    console.error(`Fetch failed for ${categorySlug}:`, err);
     return [];
   }
 }
 
 export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   const categories = Object.keys(FEEDS);
-  
-  // एक के बाद एक करने के बजाय सभी कैटेगरी एक साथ पैरेलल (Fast) लोड होंगी
+
   const results = await Promise.allSettled(
     categories.map((cat) => fetchCategoryNews(cat))
   );
@@ -107,4 +155,4 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   }
 
   return allNews;
-}
+    }
