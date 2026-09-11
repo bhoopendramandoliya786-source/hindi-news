@@ -9,7 +9,7 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-// दैनिक भास्कर और अमर उजाला के फ़ीड्स (साफ़ टेक्स्ट + असली इमेज के साथ)
+// दैनिक भास्कर और अमर उजाला के फ़ीड्स
 const FEEDS: Record<string, { url: string; source: string }> = {
   india: {
     url: "https://www.amarujala.com/rss/national-news.xml",
@@ -36,16 +36,16 @@ const FEEDS: Record<string, { url: string; source: string }> = {
     source: "अमर उजाला",
   },
   rajasthan: {
-    url: "https://feed.bhaskar.com/rss/1154", // दैनिक भास्कर राजस्थान
+    url: "https://feed.bhaskar.com/rss/1154",
     source: "दैनिक भास्कर",
   },
 };
 
-// HTML टैग्स और कचरा हटाने के लिए
+// बिना 's' फ्लैग वाला सेफ HTML क्लीनर
 function cleanHtml(raw: string): string {
   if (!raw) return "";
   return raw
-    .replace(/<!\[CDATA\[(.*?)\]\]>/gis, "$1")
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/gi, " ")
     .replace(/&quot;/gi, '"')
@@ -62,15 +62,12 @@ function extractTag(xml: string, tag: string): string {
 }
 
 function extractImageUrl(xml: string): string | null {
-  // 1. Check <enclosure url="..." />
   const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
   if (encMatch && encMatch[1]) return encMatch[1];
 
-  // 2. Check <media:content url="..." />
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
   if (mediaMatch && mediaMatch[1]) return mediaMatch[1];
 
-  // 3. Check <img src="..." /> inside description/content
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
   if (imgMatch && imgMatch[1]) return imgMatch[1];
 
@@ -106,13 +103,12 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
       const title = extractTag(itemXml, "title");
       if (!title) continue;
 
-      const linkMatch = itemXml.match(/<link[^>]*>([\\s\\S]*?)<\/link>/i);
+      const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
       const link = linkMatch ? cleanHtml(linkMatch[1]) : "";
 
       const pubDateStr = extractTag(itemXml, "pubDate");
       let description = extractTag(itemXml, "description") || title;
 
-      // अगर विवरण में फिर भी लिंक या बहुत छोटा टेक्स्ट रह जाए तो टाइटल रखें
       if (description.includes("http") || description.length < 15) {
         description = title;
       }
@@ -155,4 +151,4 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   }
 
   return allNews;
-    }
+  }
