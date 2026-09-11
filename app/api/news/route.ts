@@ -1,26 +1,19 @@
 import { NextResponse } from "next/server";
-import { fetchIndiaNews } from "@/lib/news-fetcher";
+import { fetchAllHindiNews } from "@/lib/news-fetcher";
 
 export async function GET() {
   try {
-    const articles = await fetchIndiaNews();
-
+    const articles = await fetchAllHindiNews();
     return NextResponse.json({
       success: true,
       count: articles.length,
-      articles
+      data: articles,
     });
   } catch (error) {
-    console.error("News API error:", error);
-
+    console.error("News fetch API error:", error);
     return NextResponse.json(
-      {
-        success: false,
-        message: "Unable to fetch news."
-      },
-      {
-        status: 500
-      }
+      { success: false, error: "Failed to fetch news" },
+      { status: 500 }
     );
   }
 }
