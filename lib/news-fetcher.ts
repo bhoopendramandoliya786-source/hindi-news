@@ -9,7 +9,6 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-// दैनिक भास्कर और अमर उजाला के फ़ीड्स
 const FEEDS: Record<string, { url: string; source: string }> = {
   india: {
     url: "https://www.amarujala.com/rss/national-news.xml",
@@ -41,7 +40,6 @@ const FEEDS: Record<string, { url: string; source: string }> = {
   },
 };
 
-// बिना 's' फ्लैग वाला सेफ HTML क्लीनर
 function cleanHtml(raw: string): string {
   if (!raw) return "";
   return raw
@@ -61,15 +59,19 @@ function extractTag(xml: string, tag: string): string {
   return match ? cleanHtml(match[1]) : "";
 }
 
+// इमेज ढूँढने का मजबूत फ़ंक्शन
 function extractImageUrl(xml: string): string | null {
+  // 1. enclosure टैग (अमर उजाला और भास्कर का मुख्य इमेज टैग)
   const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
-  if (encMatch && encMatch[1]) return encMatch[1];
+  if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
 
+  // 2. media:content टैग
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
-  if (mediaMatch && mediaMatch[1]) return mediaMatch[1];
+  if (mediaMatch && mediaMatch[1] && mediaMatch[1].startsWith("http")) return mediaMatch[1];
 
+  // 3. description या content के अंदर <img src="...">
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
-  if (imgMatch && imgMatch[1]) return imgMatch[1];
+  if (imgMatch && imgMatch[1] && imgMatch[1].startsWith("http")) return imgMatch[1];
 
   return null;
 }
@@ -126,7 +128,7 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
         categorySlug,
       });
 
-      if (articles.length >= 4) break;
+      if (articles.length >= 5) break;
     }
 
     return articles;
@@ -151,4 +153,4 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   }
 
   return allNews;
-  }
+      }
