@@ -18,19 +18,30 @@ export async function saveIndiaNews() {
   let saved = 0;
   let skipped = 0;
 
-  for (const article of articles) {
-    try {
-      const catName = CATEGORY_MAP[article.categorySlug] || "भारत";
+  // सभी कैटेगरी के ID पहले ही एक बार में फेच कर लें
+  const categoryCache: Record<string, string> = {};
 
-      const category = await (db as any).category.upsert({
-        where: { slug: article.categorySlug },
+  for (const [slug, name] of Object.entries(CATEGORY_MAP)) {
+    try {
+      const cat = await (db as any).category.upsert({
+        where: { slug },
         update: {},
         create: {
-          name: catName,
-          slug: article.categorySlug,
-          description: `${catName} की ताज़ा खबरें`,
+          name,
+          slug,
+          description: `${name} की ताज़ा खबरें`,
         },
       });
+      categoryCache[slug] = cat.id;
+    } catch (e) {
+      console.error("Category cache error:", e);
+    }
+  }
+
+  for (const article of articles) {
+    try {
+      const categoryId = categoryCache[article.categorySlug];
+      if (!categoryId) continue;
 
       const existing = await (db as any).news.findFirst({
         where: {
@@ -39,6 +50,7 @@ export async function saveIndiaNews() {
             { title: article.title },
           ],
         },
+        select: { id: true },
       });
 
       if (existing) {
@@ -60,14 +72,14 @@ export async function saveIndiaNews() {
           externalId: processed.externalId,
           language: "HI",
           status: "PUBLISHED",
-          categoryId: category.id,
+          categoryId: categoryId,
           publishedAt: processed.publishedAt || new Date(),
         },
       });
 
       saved++;
     } catch (error) {
-      console.error(`Unable to save article: ${article.title}`, error);
+      console.error(`Unable to save: ${article.title}`);
     }
   }
 
@@ -76,4 +88,4 @@ export async function saveIndiaNews() {
     saved,
     skipped,
   };
-    }
+}
