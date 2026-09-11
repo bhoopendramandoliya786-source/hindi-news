@@ -64,6 +64,8 @@ export default async function AdminPage() {
         </div>
 
         <div className="mt-8 grid gap-5 md:grid-cols-3">
+          {/* NEWS */}
+
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">📰</div>
 
@@ -75,13 +77,15 @@ export default async function AdminPage() {
               News articles manage करें।
             </p>
 
-            <button
-              type="button"
-              className="mt-5 rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
+            <a
+              href="/admin/news"
+              className="mt-5 inline-block rounded-lg bg-red-600 px-4 py-2 text-sm font-bold text-white hover:bg-red-700"
             >
               Manage News
-            </button>
+            </a>
           </div>
+
+          {/* CATEGORIES */}
 
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">📂</div>
@@ -94,13 +98,15 @@ export default async function AdminPage() {
               Categories manage करें।
             </p>
 
-            <button
-              type="button"
-              className="mt-5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800"
+            <a
+              href="/admin/categories"
+              className="mt-5 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800"
             >
               Manage Categories
-            </button>
+            </a>
           </div>
+
+          {/* SETTINGS */}
 
           <div className="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
             <div className="text-3xl">⚙️</div>
@@ -113,14 +119,16 @@ export default async function AdminPage() {
               Website settings manage करें।
             </p>
 
-            <button
-              type="button"
-              className="mt-5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800"
+            <a
+              href="/admin/settings"
+              className="mt-5 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-bold text-white hover:bg-gray-800"
             >
               Settings
-            </button>
+            </a>
           </div>
         </div>
+
+        {/* ACCOUNT INFORMATION */}
 
         <div className="mt-8 rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
           <h3 className="text-xl font-black text-gray-950">
@@ -162,4 +170,15 @@ export default async function AdminPage() {
       </section>
     </main>
   );
-            }
+}
+
+
+अब GitHub में इस पूरे पुराने page.tsx को हटाकर यही code डालो → Commit changes.
+
+Vercel deploy होने के बाद Dashboard में तीनों buttons चलेंगे:
+
+📰 Manage News → /admin/news
+📂 Manage Categories → /admin/categories
+⚙️ Settings → /admin/settings
+
+अभी बस यही commit करो। फिर हम अगला हिस्सा करेंगे।
