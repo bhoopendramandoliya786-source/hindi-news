@@ -86,6 +86,10 @@ model News {
   @@index([isOriginal])
   @@index([isSponsored])
   @@index([viewCount])
+  @@index([status, publishedAt])
+  @@index([categoryId, status, publishedAt])
+  @@index([status, isFeatured, publishedAt])
+  @@index([status, isBreaking, publishedAt])
 }
 
 model SiteSettings {
