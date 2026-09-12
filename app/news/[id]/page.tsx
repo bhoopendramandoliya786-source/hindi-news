@@ -58,13 +58,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const item = await getNews(id);
     if (!item) return { title: "खबर नहीं मिली", robots: { index: false, follow: true } };
     const description = (item.description || item.title).slice(0, 160);
-    const isThin = (item.content || "").trim().length < 300;
     const publishedTime = safeIso(item.publishedAt);
     const modifiedTime = safeIso(item.updatedAt);
     return {
       title: item.title,
       description,
-      robots: { index: !isThin, follow: true },
+      robots: { index: true, follow: true },
       alternates: { canonical: `${SITE_URL}/news/${item.slug}` },
       openGraph: { type: "article", title: item.title, description, url: `${SITE_URL}/news/${item.slug}`, publishedTime, modifiedTime, images: item.imageUrl ? [{ url: item.imageUrl, alt: item.title }] : undefined },
       twitter: { card: "summary_large_image", title: item.title, description, images: item.imageUrl ? [item.imageUrl] : undefined },
@@ -95,7 +94,6 @@ export default async function NewsDetailPage({ params }: Props) {
   }
 
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
-  const isThin = (newsItem.content || "").trim().length < 300;
   const bodyText = (newsItem.content || "").trim() || (newsItem.description || "").trim() || newsItem.title;
   const schema = {
     "@context": "https://schema.org",
@@ -132,7 +130,6 @@ export default async function NewsDetailPage({ params }: Props) {
             <AdSlot className="my-5" />
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
             <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
-            {isThin && <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-orange-900"><strong>संक्षिप्त अपडेट:</strong> यह खबर उपलब्ध स्रोत से मिले संक्षिप्त विवरण पर आधारित है।</div>}
             <section aria-label="खबर की पूरी जानकारी" className="mt-8 border-t border-gray-100 pt-6">
               <h2 className="mb-4 text-xl font-black text-gray-950">पूरी खबर पढ़ें</h2>
               <div className="article-body">{renderFormattedContent(bodyText)}</div>
