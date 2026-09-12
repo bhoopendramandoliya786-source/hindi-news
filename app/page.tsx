@@ -6,6 +6,17 @@ import AdSlot from "@/components/AdSense";
 export const revalidate = 30;
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 
+const newsSelect = {
+  id: true,
+  title: true,
+  description: true,
+  imageUrl: true,
+  publishedAt: true,
+  createdAt: true,
+  categoryId: true,
+  category: { select: { id: true, name: true, slug: true } },
+};
+
 function dateText(value: Date | string | null | undefined) {
   return new Date(value || Date.now()).toLocaleDateString("hi-IN", { day: "numeric", month: "short", year: "numeric" });
 }
@@ -37,10 +48,13 @@ function NewsCard({ item, featured = false }: { item: any; featured?: boolean })
 
 export default async function HomePage() {
   const [featured, breaking, latest, categories] = await Promise.all([
-    db.news.findMany({ where: { status: "PUBLISHED", isFeatured: true }, orderBy: { publishedAt: "desc" }, take: 3, include: { category: true } }),
-    db.news.findMany({ where: { status: "PUBLISHED", isBreaking: true }, orderBy: { publishedAt: "desc" }, take: 8, include: { category: true } }),
-    db.news.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 18, include: { category: true } }),
-    db.category.findMany({ orderBy: { name: "asc" }, include: { _count: { select: { news: true } } } }),
+    db.news.findMany({ where: { status: "PUBLISHED", isFeatured: true }, orderBy: { publishedAt: "desc" }, take: 3, select: newsSelect }),
+    db.news.findMany({ where: { status: "PUBLISHED", isBreaking: true }, orderBy: { publishedAt: "desc" }, take: 8, select: newsSelect }),
+    db.news.findMany({ where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 18, select: newsSelect }),
+    db.category.findMany({
+      orderBy: { name: "asc" },
+      select: { id: true, name: true, slug: true, _count: { select: { news: { where: { status: "PUBLISHED" } } } } },
+    }),
   ]);
 
   const featuredIds = new Set(featured.map((item) => item.id));
