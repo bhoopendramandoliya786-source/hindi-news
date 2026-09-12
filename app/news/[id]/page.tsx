@@ -6,13 +6,38 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-// टेक्स्ट को सुंदर हेडिंग्स, बुलेट पॉइंट्स और पैराग्राफ में बदलने वाला इंजन
+// टेक्स्ट के अंदर मौजूद लिंक को नीले क्लिकेबल लिंक में बदलने वाला हेल्पर
+function parseInlineLinks(text: string) {
+  const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.(?:gov\.in|nic\.in|com|in|org|edu)[^\s]*)/gi;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, i) => {
+    if (!part) return null;
+    if (part.match(urlRegex)) {
+      const href = part.startsWith("http") ? part : `https://${part}`;
+      return (
+        <a
+          key={i}
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 font-bold text-blue-600 hover:text-blue-800 hover:underline break-all bg-blue-50 px-2 py-0.5 rounded border border-blue-200 text-sm ml-1"
+        >
+          {part} ↗
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
+// Markdown हेडिंग, बुलेट, टेबल और लिंक इंजन
 function renderFormattedContent(text: string) {
   if (!text) return null;
 
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
-  let listItems: string[] = [];
+  let listItems: React.ReactNode[] = [];
 
   const flushList = () => {
     if (listItems.length > 0) {
@@ -35,14 +60,14 @@ function renderFormattedContent(text: string) {
       return;
     }
 
-    // 1. अगर हेडिंग है (### से शुरू होती है)
+    // 1. हेडिंग (###)
     if (line.startsWith("###")) {
       flushList();
       const headingText = line.replace(/^###\s*/, "");
       elements.push(
         <h3
           key={`h3-${index}`}
-          className="mt-8 mb-4 border-l-4 border-red-600 bg-gray-50 pl-3 py-1.5 text-lg sm:text-xl font-black text-gray-900 rounded-r-lg"
+          className="mt-8 mb-4 border-l-4 border-red-600 bg-red-50/40 pl-3 py-2 text-lg sm:text-xl font-black text-gray-900 rounded-r-lg"
         >
           {headingText}
         </h3>
@@ -50,37 +75,37 @@ function renderFormattedContent(text: string) {
       return;
     }
 
-    // 2. अगर डिवाइडर लाइन है (---)
+    // 2. डिवाइडर (---)
     if (line === "---") {
       flushList();
       elements.push(<hr key={`hr-${index}`} className="my-6 border-gray-200" />);
       return;
     }
 
-    // 3. अगर बुलेट पॉइंट है (* या • या - से शुरू)
+    // 3. बुलेट पॉइंट्स (* या • या -)
     if (line.startsWith("*") || line.startsWith("•") || (line.startsWith("-") && !line.startsWith("---"))) {
       const cleanItem = line.replace(/^[*•-]\s*/, "");
-      listItems.push(cleanItem);
+      listItems.push(parseInlineLinks(cleanItem));
       return;
     }
 
-    // 4. अगर नंबर वाली लिस्ट है (1. 2. 3.)
+    // 4. नंबर लिस्ट (1. 2. 3.)
     if (/^\d+\.\s/.test(line)) {
       flushList();
       elements.push(
         <div key={`num-${index}`} className="my-2 flex gap-3 text-gray-800 leading-relaxed font-medium">
           <span className="shrink-0 font-bold text-red-600">{line.match(/^\d+\./)?.[0]}</span>
-          <span>{line.replace(/^\d+\.\s*/, "")}</span>
+          <span>{parseInlineLinks(line.replace(/^\d+\.\s*/, ""))}</span>
         </div>
       );
       return;
     }
 
-    // 5. अगर साधारण पैराग्राफ है
+    // 5. साधारण पैराग्राफ
     flushList();
     elements.push(
       <p key={`p-${index}`} className="my-3 text-base sm:text-lg leading-loose text-gray-800">
-        {line}
+        {parseInlineLinks(line)}
       </p>
     );
   });
@@ -115,7 +140,7 @@ export default async function NewsDetailPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-gray-50/50 py-6 md:py-10 relative">
       
-      {/* 🟢 स्क्रीन पर तैरता WhatsApp बटन */}
+      {/* 🟢 Floating WhatsApp Button */}
       <div className="fixed bottom-6 right-4 z-50">
         <a
           href={WHATSAPP_LINK}
@@ -140,7 +165,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           
-          {/* Main Article */}
+          {/* Main Content */}
           <article className="rounded-2xl border border-gray-100 bg-white p-5 md:p-8 shadow-sm lg:col-span-2">
             
             <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
@@ -172,7 +197,7 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* In-Article Community Join Box */}
+            {/* In-Article WhatsApp Box */}
             <div className="my-6 rounded-xl border border-dashed border-green-300 bg-green-50/80 p-4 text-center">
               <p className="text-sm font-bold text-gray-900 mb-2">
                 📢 सरकारी नौकरी, रिजल्ट और ताज़ा खबरों के तुरंत अपडेट पाने के लिए हमारे चैनल से जुड़ें:
@@ -196,12 +221,12 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* Formatted Content Area */}
+            {/* Formatted Content */}
             <div className="article-body">
               {renderFormattedContent(newsItem.content || newsItem.description)}
             </div>
 
-            {/* Footer Navigation */}
+            {/* Footer */}
             <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
               <span className="text-xs text-gray-400 font-medium">
                 विशेष रिपोर्ट • Hindi News
