@@ -19,7 +19,7 @@ export default async function AdminPage() {
     db.news.count({ where: { status: "PUBLISHED", isSponsored: true } }),
     db.news.aggregate({ _sum: { viewCount: true } }),
     db.category.count(),
-    db.news.findMany({ orderBy: { createdAt: "desc" }, take: 8, include: { category: true }, select: { id: true, title: true, slug: true, status: true, isOriginal: true, isBreaking: true, viewCount: true, createdAt: true, category: { select: { name: true } } } }),
+    db.news.findMany({ orderBy: { createdAt: "desc" }, take: 8, select: { id: true, title: true, slug: true, status: true, isOriginal: true, isBreaking: true, viewCount: true, createdAt: true, category: { select: { name: true } } } }),
   ]);
   return (
     <main className="min-h-screen bg-gray-50">
