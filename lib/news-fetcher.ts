@@ -12,13 +12,13 @@ export type NormalizedNews = {
 // भरोसेमंद हिंदी न्यूज़ फ़ीड्स। साइट पर headline/उपलब्ध सारांश से
 // अपनी प्रस्तुति बनाई जाती है; पूरा मूल लेख कॉपी नहीं किया जाता।
 const FEEDS: Record<string, { url: string; source: string }> = {
-  india: { url: "https://feeds.feedburner.com/ndtvkhabar-latest", source: "समाचार फ़ीड" },
-  sports: { url: "https://feeds.feedburner.com/ndtvkhabar-sports", source: "समाचार फ़ीड" },
-  entertainment: { url: "https://feeds.feedburner.com/ndtvkhabar-entertainment", source: "समाचार फ़ीड" },
-  business: { url: "https://feeds.feedburner.com/ndtvkhabar-business", source: "समाचार फ़ीड" },
-  technology: { url: "https://feeds.feedburner.com/ndtvkhabar-gadgets", source: "समाचार फ़ीड" },
-  world: { url: "https://feeds.feedburner.com/ndtvkhabar-world", source: "समाचार फ़ीड" },
-  rajasthan: { url: "https://feed.bhaskar.com/rss/1154", source: "समाचार फ़ीड" },
+  india: { url: "https://feeds.feedburner.com/ndtvkhabar-latest", source: "NDTV" },
+  sports: { url: "https://feeds.feedburner.com/ndtvkhabar-sports", source: "NDTV" },
+  entertainment: { url: "https://feeds.feedburner.com/ndtvkhabar-entertainment", source: "NDTV" },
+  business: { url: "https://feeds.feedburner.com/ndtvkhabar-business", source: "NDTV" },
+  technology: { url: "https://feeds.feedburner.com/ndtvkhabar-gadgets", source: "NDTV" },
+  world: { url: "https://feeds.feedburner.com/ndtvkhabar-world", source: "NDTV" },
+  rajasthan: { url: "https://feed.bhaskar.com/rss/1154", source: "दैनिक भास्कर" },
 };
 
 function cleanHtml(raw: string): string {
