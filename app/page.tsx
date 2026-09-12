@@ -6,6 +6,13 @@ import AdSlot from "@/components/AdSense";
 export const revalidate = 30;
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 
+export const metadata = {
+  title: "हिंदी न्यूज़ | देश, राजस्थान और दुनिया की ताज़ा खबरें",
+  description: "देश, राजस्थान, बिज़नेस, टेक्नोलॉजी, खेल, मनोरंजन और जरूरी अपडेट की ताज़ा हिंदी खबरें।",
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", title: "हिंदी न्यूज़ | ताज़ा हिंदी खबरें", description: "देश, राजस्थान और दुनिया की ताज़ा हिंदी खबरें।", url: "/" },
+};
+
 const newsSelect = {
   id: true,
   title: true,
@@ -35,7 +42,7 @@ function NewsCard({ item, featured = false }: { item: any; featured?: boolean })
           <time className="text-gray-400">{dateText(item.publishedAt || item.createdAt)}</time>
         </div>
         <Link href={`/news/${item.id}`} prefetch className="block">
-          <h3 className={`${featured ? "text-xl sm:text-2xl" : "text-base"} font-black leading-snug text-gray-950 transition group-hover:text-red-600`}>{item.title}</h3>
+          <h2 className={`${featured ? "text-xl sm:text-2xl" : "text-base"} font-black leading-snug text-gray-950 transition group-hover:text-red-600`}>{item.title}</h2>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-500">{item.description || item.title}</p>
         </Link>
         <div className="mt-4 border-t border-gray-100 pt-3">
@@ -60,9 +67,9 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen bg-gray-50 pb-16">
       <div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
-        <section className="rounded-3xl bg-gradient-to-r from-red-700 via-red-600 to-orange-500 p-6 text-white shadow-lg sm:p-10">
+        <section className="rounded-3xl bg-gradient-to-r from-red-700 via-red-600 to-orange-500 p-6 text-white shadow-lg sm:p-10" aria-labelledby="home-heading">
           <span className="inline-flex rounded-full bg-white/15 px-3 py-1 text-xs font-black">🔴 ताज़ा खबरें और जरूरी अपडेट</span>
-          <h1 className="mt-4 text-3xl font-black sm:text-5xl">देश, राजस्थान और दुनिया की ताज़ा खबरें</h1>
+          <h1 id="home-heading" className="mt-4 text-3xl font-black sm:text-5xl">देश, राजस्थान और दुनिया की ताज़ा खबरें</h1>
           <p className="mt-3 max-w-3xl text-sm leading-6 text-red-50 sm:text-base">भारत, राजस्थान, सरकारी नौकरी, बिज़नेस, टेक्नोलॉजी, खेल और मनोरंजन की खबरें एक ही जगह।</p>
           <div className="mt-6 flex flex-wrap gap-3">
             <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-500 px-5 py-3 text-sm font-black shadow hover:bg-green-600">💬 WhatsApp चैनल से जुड़ें</a>
@@ -73,33 +80,33 @@ export default async function HomePage() {
         <AdSlot className="my-5" />
 
         {breaking.length > 0 && (
-          <section className="mb-8 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm">
-            <div className="flex items-center gap-3 border-b border-red-100 px-4 py-3"><span className="rounded-md bg-red-600 px-2 py-1 text-xs font-black text-white">ब्रेकिंग</span><h2 className="font-black text-gray-950">बड़ी और ताज़ा खबरें</h2></div>
+          <section className="mb-8 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm" aria-labelledby="breaking-heading">
+            <div className="flex items-center gap-3 border-b border-red-100 px-4 py-3"><span className="rounded-md bg-red-600 px-2 py-1 text-xs font-black text-white">ब्रेकिंग</span><h2 id="breaking-heading" className="font-black text-gray-950">बड़ी और ताज़ा खबरें</h2></div>
             <div className="divide-y divide-gray-100">{breaking.map((item) => <Link key={item.id} href={`/news/${item.id}`} prefetch className="block px-4 py-3 text-sm font-bold text-gray-800 hover:bg-red-50 hover:text-red-700">🔴 {item.title}</Link>)}</div>
           </section>
         )}
 
         {featured.length > 0 && (
-          <section className="mb-10"><SectionTitle title="⭐ प्रमुख खबरें" /><div className="grid gap-5 md:grid-cols-2">{featured.map((item) => <NewsCard key={item.id} item={item} featured />)}</div></section>
+          <section className="mb-10" aria-labelledby="featured-heading"><div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 id="featured-heading" className="text-xl font-black text-gray-950">⭐ प्रमुख खबरें</h2></div><div className="grid gap-5 md:grid-cols-2">{featured.map((item) => <NewsCard key={item.id} item={item} featured />)}</div></section>
         )}
 
         <AdSlot className="my-5" />
 
-        <section className="mb-10">
-          <SectionTitle title="📰 ताज़ा खबरें" />
+        <section className="mb-10" aria-labelledby="latest-heading">
+          <SectionTitle title="📰 ताज़ा खबरें" id="latest-heading" />
           {latestWithoutFeatured.length === 0 ? <Empty /> : <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">{latestWithoutFeatured.map((item) => <NewsCard key={item.id} item={item} />)}</div>}
         </section>
 
         {categories.slice(0, 6).map((category) => {
           const categoryNews = latest.filter((item) => item.categoryId === category.id).slice(0, 3);
           if (!categoryNews.length) return null;
-          return <section key={category.id} className="mb-10"><div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="text-xl font-black text-gray-950">{category.name}</h2><Link href={`/category/${category.slug}`} prefetch className="text-xs font-black text-red-600">सभी खबरें →</Link></div><div className="grid gap-5 md:grid-cols-3">{categoryNews.map((item) => <NewsCard key={item.id} item={item} />)}</div></section>;
+          return <section key={category.id} className="mb-10" aria-labelledby={`cat-${category.id}`}><div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 id={`cat-${category.id}`} className="text-xl font-black text-gray-950">{category.name}</h2><Link href={`/category/${category.slug}`} prefetch className="text-xs font-black text-red-600">सभी खबरें →</Link></div><div className="grid gap-5 md:grid-cols-3">{categoryNews.map((item) => <NewsCard key={item.id} item={item} />)}</div></section>;
         })}
 
         <AdSlot className="my-5" />
 
-        <section className="rounded-2xl bg-gray-950 p-6 text-white sm:p-8">
-          <h2 className="text-2xl font-black">📲 रोज़ की खबर सीधे WhatsApp पर</h2>
+        <section className="rounded-2xl bg-gray-950 p-6 text-white sm:p-8" aria-labelledby="whatsapp-heading">
+          <h2 id="whatsapp-heading" className="text-2xl font-black">📲 रोज़ की खबर सीधे WhatsApp पर</h2>
           <p className="mt-2 text-sm leading-6 text-gray-300">नई खबर, भर्ती, रिजल्ट और जरूरी अपडेट मिस न करें।</p>
           <a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block rounded-xl bg-green-500 px-5 py-3 text-sm font-black hover:bg-green-600">WhatsApp चैनल जॉइन करें →</a>
         </section>
@@ -108,5 +115,5 @@ export default async function HomePage() {
   );
 }
 
-function SectionTitle({ title }: { title: string }) { return <div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="text-xl font-black text-gray-950">{title}</h2></div>; }
+function SectionTitle({ title, id }: { title: string; id?: string }) { return <div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 id={id} className="text-xl font-black text-gray-950">{title}</h2></div>; }
 function Empty() { return <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center text-gray-500">अभी कोई खबर उपलब्ध नहीं है।</div>; }
