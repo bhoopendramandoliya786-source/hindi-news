@@ -18,22 +18,73 @@ export async function saveIndiaNews() {
   let saved = 0;
   let skipped = 0;
   const categoryCache: Record<string, string> = {};
+
   for (const [slug, name] of Object.entries(CATEGORY_MAP)) {
     try {
-      const cat = await (db as any).category.upsert({ where: { slug }, update: {}, create: { name, slug, description: `${name} की ताज़ा खबरें` } });
+      const cat = await (db as any).category.upsert({
+        where: { slug },
+        update: {},
+        create: { name, slug, description: `${name} की ताज़ा खबरें` },
+      });
       categoryCache[slug] = cat.id;
-    } catch (e) { console.error("Category cache error:", e); }
+    } catch (e) {
+      console.error("Category cache error:", e);
+    }
   }
+
   for (const article of articles) {
     try {
       const categoryId = categoryCache[article.categorySlug];
       if (!categoryId) continue;
-      const existing = await (db as any).news.findFirst({ where: { OR: [{ externalId: article.externalId }, { title: article.title }] }, select: { id: true } });
-      if (existing) { skipped++; continue; }
+
+      const existing = await (db as any).news.findFirst({
+        where: {
+          OR: [
+            { externalId: article.externalId },
+            { title: article.title },
+          ],
+        },
+        select: { id: true },
+      });
+
+      if (existing) {
+        skipped++;
+        continue;
+      }
+
       const processed = processNews(article as any, Date.now().toString());
-      await (db as any).news.create({ data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.description, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId: categoryId, publishedAt: processed.publishedAt || new Date() } });
-      saved++;
-    } catch (error) { console.error(`Unable to save: ${article.title}`); }
+
+      try {
+        await (db as any).news.create({
+          data: {
+            title: processed.title,
+            slug: processed.slug,
+            description: processed.description,
+            content: processed.description,
+            imageUrl: processed.imageUrl,
+            sourceName: processed.sourceName,
+            sourceUrl: processed.sourceUrl,
+            externalId: processed.externalId,
+            language: "HI",
+            status: "PUBLISHED",
+            categoryId,
+            publishedAt: processed.publishedAt || new Date(),
+          },
+        });
+        saved++;
+      } catch (error: any) {
+        // Multiple feeds can contain the same article. If another item wins
+        // the unique externalId/slug race, treat it as a normal skip.
+        if (error?.code === "P2002") {
+          skipped++;
+          continue;
+        }
+        throw error;
+      }
+    } catch (error) {
+      console.error(`Unable to save: ${article.title}`, error);
+    }
   }
+
   return { fetched: articles.length, saved, skipped };
 }
