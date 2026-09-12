@@ -23,6 +23,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   const website = { "@context": "https://schema.org", "@type": "WebSite", name: siteName, url: siteUrl, potentialAction: { "@type": "SearchAction", target: `${siteUrl}/search?q={search_term_string}`, "query-input": "required name=search_term_string" } };
   return (
     <html lang="hi">
+      <head>
+        <meta name="google-site-verification" content="mjwnFJ_8h6tNf1HgsE9WVZyprx1aqlRsJQhA8DExR0s" />
+      </head>
       <body>
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }} />
