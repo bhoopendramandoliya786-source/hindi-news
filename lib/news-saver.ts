@@ -73,9 +73,10 @@ export async function saveIndiaNews() {
         });
         saved++;
       } catch (error: any) {
-        // Multiple feeds can contain the same article. If another item wins
-        // the unique externalId/slug race, treat it as a normal skip.
-        if (error?.code === "P2002") {
+        // Multiple feeds can contain the same article and race between the
+        // pre-check and create. Treat every Prisma unique violation as a skip.
+        const message = String(error?.message || error || "");
+        if (error?.code === "P2002" || message.includes("Unique constraint failed")) {
           skipped++;
           continue;
         }
