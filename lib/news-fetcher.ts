@@ -46,11 +46,11 @@ function extractTag(xml: string, tag: string): string {
 
 function extractImageUrl(xml: string): string | null {
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
-  if (mediaMatch && mediaMatch[1] && mediaMatch[1].startsWith("http")) return mediaMatch[1];
+  if (mediaMatch?.[1]?.startsWith("http")) return mediaMatch[1];
   const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
-  if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
+  if (encMatch?.[1]?.startsWith("http")) return encMatch[1];
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
-  if (imgMatch && imgMatch[1] && imgMatch[1].startsWith("http")) return imgMatch[1];
+  if (imgMatch?.[1]?.startsWith("http")) return imgMatch[1];
   return null;
 }
 
@@ -58,22 +58,26 @@ function makeSummary(title: string, rawDescription: string): string {
   let text = cleanHtml(rawDescription);
   if (!text || text.length < 25 || text.toLowerCase() === title.toLowerCase()) return title;
   text = text.replace(/\s*\|\s*(NDTV|दैनिक भास्कर).*$/i, "").trim();
-  if (text.length > 420) text = `${text.slice(0, 417).replace(/\s+\S*$/, "")}...`;
+  if (text.length > 600) text = `${text.slice(0, 597).replace(/\s+\S*$/, "")}...`;
   return text || title;
+}
+
+function stableExternalId(link: string, title: string, publishedAt: string, categorySlug: string): string {
+  const value = (link || `${categorySlug}|${title}|${publishedAt}`).trim().toLowerCase();
+  return value.slice(0, 900);
 }
 
 export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> {
   const config = FEEDS[categorySlug];
   if (!config) return [];
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
     const res = await fetch(config.url, {
       cache: "no-store",
       signal: controller.signal,
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+      headers: { "User-Agent": "HindiNewsBot/1.0 (+https://hindi-news-omega.vercel.app)" },
     });
-    clearTimeout(timeoutId);
     if (!res.ok) return [];
     const xmlText = await res.text();
     const items = xmlText.split("<item>");
@@ -85,24 +89,27 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
       const linkMatch = itemXml.match(/<link[^>]*>([\s\S]*?)<\/link>/i);
       const link = linkMatch ? cleanHtml(linkMatch[1]) : "";
       const pubDateStr = extractTag(itemXml, "pubDate");
+      const publishedAt = pubDateStr ? new Date(pubDateStr) : new Date();
+      const safePublishedAt = Number.isNaN(publishedAt.getTime()) ? new Date() : publishedAt;
       const description = makeSummary(title, extractTag(itemXml, "description"));
-      const imageUrl = extractImageUrl(itemXml);
       articles.push({
         title,
         description,
-        imageUrl,
+        imageUrl: extractImageUrl(itemXml),
         sourceName: config.source,
         sourceUrl: link,
-        publishedAt: pubDateStr ? new Date(pubDateStr) : new Date(),
-        externalId: link || `${title}-${Date.now()}`,
+        publishedAt: safePublishedAt,
+        externalId: stableExternalId(link, title, pubDateStr, categorySlug),
         categorySlug,
       });
-      if (articles.length >= 4) break;
+      if (articles.length >= 5) break;
     }
     return articles;
   } catch (err) {
     console.error(`Fetch failed for ${categorySlug}:`, err);
     return [];
+  } finally {
+    clearTimeout(timeoutId);
   }
 }
 
