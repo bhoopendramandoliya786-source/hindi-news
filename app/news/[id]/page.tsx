@@ -8,6 +8,11 @@ interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 
+// Article pages must always read the current database state. This also prevents
+// an old cached route from continuing to show "खबर नहीं मिली" after a publish.
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 function parseInlineLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.(?:gov\.in|nic\.in|com|in|org|edu)[^\s]*)/gi;
   return text.split(urlRegex).map((part, i) => part?.match(urlRegex) ? <a key={i} href={part.startsWith("http") ? part : `https://${part}`} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 hover:underline break-all">{part} ↗</a> : part || null);
@@ -32,7 +37,33 @@ function renderFormattedContent(text: string) {
 }
 
 async function getNews(idOrSlug: string) {
-  return db.news.findFirst({ where: { status: "PUBLISHED", OR: [{ id: idOrSlug }, { slug: idOrSlug }] }, include: { category: true } });
+  const raw = decodeURIComponent(idOrSlug || "").trim();
+  if (!raw) return null;
+
+  // First try the canonical published record. Slugs are generated in lowercase,
+  // but insensitive matching also keeps older articles working after slug changes.
+  const exact = await db.news.findFirst({
+    where: {
+      status: "PUBLISHED",
+      OR: [
+        { id: raw },
+        { slug: { equals: raw, mode: "insensitive" } },
+      ],
+    },
+    include: { category: true },
+  });
+  if (exact) return exact;
+
+  // Legacy/imported records may have a trailing slash or slightly different slug
+  // casing. A second slug-only lookup avoids a false "खबर नहीं मिली" for a real article.
+  const normalizedSlug = raw.replace(/^\/+|\/+$/g, "");
+  if (normalizedSlug !== raw) {
+    return db.news.findFirst({
+      where: { status: "PUBLISHED", slug: { equals: normalizedSlug, mode: "insensitive" } },
+      include: { category: true },
+    });
+  }
+  return null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
