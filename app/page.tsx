@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import AdSlot from "@/components/AdSense";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 
 function dateText(value: Date | string | null | undefined) {
@@ -12,9 +13,9 @@ function dateText(value: Date | string | null | undefined) {
 function NewsCard({ item, featured = false }: { item: any; featured?: boolean }) {
   return (
     <article className={`group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg ${featured ? "md:col-span-2" : ""}`}>
-      <Link href={`/news/${item.slug}`} className="block">
-        <div className={`${featured ? "h-64 sm:h-80" : "h-48"} overflow-hidden bg-gray-100`}>
-          {item.imageUrl ? <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-red-600 to-orange-500 text-xl font-black text-white">Hindi News</div>}
+      <Link href={`/news/${item.id}`} className="block">
+        <div className={`${featured ? "h-64 sm:h-80" : "h-48"} relative overflow-hidden bg-gray-100`}>
+          {item.imageUrl ? <Image src={item.imageUrl} alt={item.title} fill sizes={featured ? "(max-width: 768px) 100vw, 66vw" : "(max-width: 768px) 100vw, 33vw"} priority={featured} className="object-cover transition duration-500 group-hover:scale-105" /> : <div className="flex h-full items-center justify-center bg-gradient-to-br from-red-600 to-orange-500 text-xl font-black text-white">Hindi News</div>}
         </div>
       </Link>
       <div className="p-4 sm:p-5">
@@ -22,12 +23,12 @@ function NewsCard({ item, featured = false }: { item: any; featured?: boolean })
           <Link href={`/category/${item.category?.slug || ""}`} className="font-black text-red-600 hover:underline">{item.category?.name || "समाचार"}</Link>
           <time className="text-gray-400">{dateText(item.publishedAt || item.createdAt)}</time>
         </div>
-        <Link href={`/news/${item.slug}`}>
+        <Link href={`/news/${item.id}`}>
           <h3 className={`${featured ? "text-xl sm:text-2xl" : "text-base"} font-black leading-snug text-gray-950 transition group-hover:text-red-600`}>{item.title}</h3>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-500">{item.description || item.title}</p>
         </Link>
         <div className="mt-4 border-t border-gray-100 pt-3">
-          <Link href={`/news/${item.slug}`} className="text-xs font-black text-red-600 hover:underline">पूरी खबर पढ़ें →</Link>
+          <Link href={`/news/${item.id}`} className="text-xs font-black text-red-600 hover:underline">पूरी खबर पढ़ें →</Link>
         </div>
       </div>
     </article>
@@ -63,7 +64,7 @@ export default async function HomePage() {
         {breaking.length > 0 && (
           <section className="mb-8 overflow-hidden rounded-2xl border border-red-100 bg-white shadow-sm">
             <div className="flex items-center gap-3 border-b border-red-100 px-4 py-3"><span className="rounded-md bg-red-600 px-2 py-1 text-xs font-black text-white">ब्रेकिंग</span><h2 className="font-black text-gray-950">बड़ी और ताज़ा खबरें</h2></div>
-            <div className="divide-y divide-gray-100">{breaking.map((item) => <Link key={item.id} href={`/news/${item.slug}`} className="block px-4 py-3 text-sm font-bold text-gray-800 hover:bg-red-50 hover:text-red-700">🔴 {item.title}</Link>)}</div>
+            <div className="divide-y divide-gray-100">{breaking.map((item) => <Link key={item.id} href={`/news/${item.id}`} className="block px-4 py-3 text-sm font-bold text-gray-800 hover:bg-red-50 hover:text-red-700">🔴 {item.title}</Link>)}</div>
           </section>
         )}
 
