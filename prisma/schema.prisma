@@ -59,10 +59,16 @@ model News {
   sourceName      String?
   sourceUrl       String?
   externalId      String
+  authorName      String?
+  sponsorName     String?
+  sponsorUrl      String?
   language        Language   @default(HI)
   status          NewsStatus @default(DRAFT)
   isFeatured      Boolean    @default(false)
   isBreaking      Boolean    @default(false)
+  isOriginal      Boolean    @default(false)
+  isSponsored     Boolean    @default(false)
+  viewCount       Int        @default(0)
   publishedAt     DateTime?
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
@@ -77,6 +83,9 @@ model News {
   @@index([publishedAt])
   @@index([isFeatured])
   @@index([isBreaking])
+  @@index([isOriginal])
+  @@index([isSponsored])
+  @@index([viewCount])
 }
 
 model SiteSettings {
