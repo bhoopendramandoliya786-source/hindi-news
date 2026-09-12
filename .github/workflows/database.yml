@@ -27,6 +27,12 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
+      - name: One-time reset old news
+        if: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, 'RESET_NEWS') }}
+        run: npx tsx scripts/reset-news.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
       - name: Fetch and publish fresh news
         run: npm run fetch:news
         env:
