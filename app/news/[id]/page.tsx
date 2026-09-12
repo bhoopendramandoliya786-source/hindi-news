@@ -9,7 +9,6 @@ interface Props {
 export default async function NewsDetailPage({ params }: Props) {
   const { id } = await params;
 
-  // 1. मुख्य खबर निकालें
   const newsItem = await (db as any).news.findUnique({
     where: { id: id },
     include: { category: true },
@@ -19,7 +18,6 @@ export default async function NewsDetailPage({ params }: Props) {
     notFound();
   }
 
-  // 2. साइडबार के लिए अन्य ताज़ा खबरें निकालें
   const relatedNews = await (db as any).news.findMany({
     where: {
       id: { not: id },
@@ -29,15 +27,13 @@ export default async function NewsDetailPage({ params }: Props) {
     take: 6,
   });
 
-  // अपने WhatsApp और Telegram ग्रुप के लिंक यहाँ डालें
-  const WHATSAPP_LINK = "https://whatsapp.com/channel/your-channel-id";
-  const TELEGRAM_LINK = "https://t.me/your-telegram-channel";
+  const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 
   return (
     <main className="min-h-screen bg-gray-50/50 py-6 md:py-10 relative">
       
-      {/* 🟢 स्क्रीन पर हमेशा तैरता (Floating) WhatsApp बटन */}
-      <div className="fixed bottom-6 right-4 z-50 flex flex-col gap-2">
+      {/* 🟢 स्क्रीन पर तैरता फ्लोटिंग WhatsApp बटन */}
+      <div className="fixed bottom-6 right-4 z-50">
         <a
           href={WHATSAPP_LINK}
           target="_blank"
@@ -61,7 +57,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           
-          {/* Main Article Area (बाईं तरफ मुख्य खबर) */}
+          {/* Main Article Area */}
           <article className="rounded-2xl border border-gray-100 bg-white p-5 md:p-8 shadow-sm lg:col-span-2">
             
             <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
@@ -79,12 +75,10 @@ export default async function NewsDetailPage({ params }: Props) {
               </span>
             </div>
 
-            {/* Headline */}
             <h1 className="text-2xl font-black leading-snug text-gray-950 sm:text-3xl md:text-4xl mb-6">
               {newsItem.title}
             </h1>
 
-            {/* Main Image */}
             {newsItem.imageUrl && (
               <div className="relative mb-6 overflow-hidden rounded-xl bg-gray-100">
                 <img
@@ -95,30 +89,24 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* In-Article Community Join Box (WhatsApp/Telegram जॉइन बॉक्स) */}
-            <div className="my-6 rounded-xl border border-dashed border-green-300 bg-green-50/70 p-4 text-center">
-              <p className="text-sm font-bold text-gray-900 mb-2">
-                📢 ताज़ा खबरों और सरकारी नौकरी के अपडेट सबसे पहले पाने के लिए:
+            {/* In-Article WhatsApp Join Box */}
+            <div className="my-6 rounded-xl border border-dashed border-green-300 bg-green-50/80 p-5 text-center">
+              <p className="text-sm font-bold text-gray-900 mb-3">
+                📢 सरकारी नौकरी, रिजल्ट और ताज़ा खबरों के तुरंत अपडेट पाने के लिए हमारे चैनल से जुड़ें:
               </p>
-              <div className="flex justify-center gap-3">
+              <div className="flex justify-center">
                 <a
                   href={WHATSAPP_LINK}
                   target="_blank"
-                  className="rounded-lg bg-green-600 px-4 py-2 text-xs font-bold text-white shadow hover:bg-green-700"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-green-700 transition"
                 >
-                  व्हाट्सएप चैनल से जुड़ें 👉
-                </a>
-                <a
-                  href={TELEGRAM_LINK}
-                  target="_blank"
-                  className="rounded-lg bg-sky-500 px-4 py-2 text-xs font-bold text-white shadow hover:bg-sky-600"
-                >
-                  टेलीग्राम ग्रुप
+                  <span>💬</span> व्हाट्सएप चैनल से जुड़ें 👉
                 </a>
               </div>
             </div>
 
-            {/* Short Highlighted Description */}
+            {/* Highlighted Lead */}
             {newsItem.description && (
               <div className="my-6 rounded-r-xl border-l-4 border-red-600 bg-red-50/50 p-4 text-base font-semibold leading-relaxed text-gray-800">
                 {newsItem.description}
@@ -130,7 +118,7 @@ export default async function NewsDetailPage({ params }: Props) {
               <p>{newsItem.content || newsItem.description}</p>
             </div>
 
-            {/* Footer Navigation (NDTV/अमर उजाला का बाहरी लिंक हटा दिया गया) */}
+            {/* Footer Navigation */}
             <div className="mt-8 flex items-center justify-between border-t border-gray-100 pt-6">
               <span className="text-xs text-gray-400 font-medium">
                 विशेष रिपोर्ट • Hindi News
@@ -145,7 +133,7 @@ export default async function NewsDetailPage({ params }: Props) {
             </div>
           </article>
 
-          {/* Sidebar (दाईं तरफ अन्य ताज़ा खबरें) */}
+          {/* Sidebar */}
           <aside className="space-y-6">
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
               <h3 className="border-b-2 border-red-600 pb-2 text-base font-black text-gray-950 mb-4">
@@ -185,4 +173,4 @@ export default async function NewsDetailPage({ params }: Props) {
       </div>
     </main>
   );
-                }
+}
