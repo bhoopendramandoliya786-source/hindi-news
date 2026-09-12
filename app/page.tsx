@@ -11,15 +11,13 @@ export default async function HomePage() {
     include: { category: true },
   });
 
-  // अपने WhatsApp और Telegram ग्रुप के लिंक यहाँ सेट करें
-  const WHATSAPP_LINK = "https://whatsapp.com/channel/your-channel-id";
-  const TELEGRAM_LINK = "https://t.me/your-telegram-channel";
+  const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 
   return (
     <main className="min-h-screen bg-gray-50/50 pb-16 relative">
       
-      {/* 🟢 स्क्रीन पर हमेशा तैरता (Floating) WhatsApp बटन */}
-      <div className="fixed bottom-6 right-4 z-50 flex flex-col gap-2">
+      {/* 🟢 स्क्रीन पर तैरता फ्लोटिंग WhatsApp बटन */}
+      <div className="fixed bottom-6 right-4 z-50">
         <a
           href={WHATSAPP_LINK}
           target="_blank"
@@ -44,23 +42,14 @@ export default async function HomePage() {
             भारत, राजस्थान, सरकारी भर्ती, बिज़नेस, खेल और मनोरंजन की खबरें एक ही जगह।
           </p>
 
-          {/* Header Social Bar */}
           <div className="mt-5 flex flex-wrap gap-3">
             <a
               href={WHATSAPP_LINK}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 px-3.5 py-1.5 text-xs font-bold text-white shadow transition hover:bg-green-600"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-green-500 px-4 py-2 text-xs font-bold text-white shadow transition hover:bg-green-600"
             >
               <span>💬</span> WhatsApp चैनल जॉइन करें
-            </a>
-            <a
-              href={TELEGRAM_LINK}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-lg bg-sky-500 px-3.5 py-1.5 text-xs font-bold text-white shadow transition hover:bg-sky-600"
-            >
-              <span>✈️</span> Telegram ग्रुप
             </a>
           </div>
         </div>
@@ -92,7 +81,6 @@ export default async function HomePage() {
                 key={item.id}
                 className="flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md"
               >
-                {/* News Thumbnail */}
                 <Link href={`/news/${item.id}`} className="relative block h-48 w-full overflow-hidden bg-gray-100">
                   {item.imageUrl ? (
                     <img
@@ -107,7 +95,6 @@ export default async function HomePage() {
                   )}
                 </Link>
 
-                {/* Card Content */}
                 <div className="flex flex-1 flex-col p-4">
                   <div className="mb-2 flex items-center justify-between text-xs text-gray-400">
                     <span className="font-bold text-red-600 uppercase">
@@ -130,7 +117,6 @@ export default async function HomePage() {
                     </p>
                   </Link>
 
-                  {/* Card Footer (NDTV हटाकर आपका ब्रांड नाम) */}
                   <div className="mt-3 flex items-center justify-between border-t border-gray-50 pt-3">
                     <span className="text-[11px] font-medium text-gray-400">
                       Hindi News
@@ -150,4 +136,4 @@ export default async function HomePage() {
       </div>
     </main>
   );
-}
+                }
