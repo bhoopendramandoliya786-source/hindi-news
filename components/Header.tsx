@@ -5,6 +5,7 @@ import { useState } from "react";
 
 const navigation = [
   { name: "होम", href: "/" },
+  { name: "ट्रेंडिंग", href: "/trending" },
   { name: "भारत", href: "/category/india" },
   { name: "राजस्थान", href: "/category/rajasthan" },
   { name: "दुनिया", href: "/category/world" },
@@ -22,11 +23,11 @@ export default function Header() {
       <div className="bg-red-600 text-white">
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4">
           <Link href="/" className="shrink-0 text-2xl font-extrabold">📰 Hindi News</Link>
-          <form action="/search" className="hidden flex-1 max-w-md sm:flex">
+          <form action="/search" className="hidden max-w-md flex-1 sm:flex">
             <input name="q" placeholder="खबर खोजें..." className="w-full rounded-l-lg border-0 px-4 py-2 text-sm text-gray-900 outline-none" />
             <button className="rounded-r-lg bg-gray-950 px-4 text-sm font-bold">खोजें</button>
           </form>
-          <div className="hidden items-center gap-2 sm:flex"><Link href="/search" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">🔎</Link><button className="rounded-md bg-white px-3 py-1.5 text-sm font-bold text-red-600">हिंदी</button></div>
+          <div className="hidden items-center gap-2 sm:flex"><Link href="/search" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">🔎</Link><Link href="/jobs" className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-red-600">नौकरी</Link></div>
           <button onClick={() => setMenuOpen(!menuOpen)} className="rounded-md border border-white px-3 py-2 text-xl sm:hidden" aria-label="Menu">☰</button>
         </div>
       </div>
