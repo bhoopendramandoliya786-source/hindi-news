@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
   const [categories, news] = await Promise.all([
@@ -24,17 +26,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/privacy`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/terms`, changeFrequency: "yearly", priority: 0.2 },
     { url: `${base}/disclaimer`, changeFrequency: "yearly", priority: 0.2 },
-    ...categories.map((c) => ({
-      url: `${base}/category/${c.slug}`,
-      lastModified: c.updatedAt,
-      changeFrequency: "hourly" as const,
-      priority: 0.8,
-    })),
-    ...news.map((n) => ({
-      url: `${base}/news/${n.slug}`,
-      lastModified: n.updatedAt,
-      changeFrequency: "daily" as const,
-      priority: 0.7,
-    })),
+    ...categories.map((c) => ({ url: `${base}/category/${c.slug}`, lastModified: c.updatedAt, changeFrequency: "hourly" as const, priority: 0.8 })),
+    ...news.map((n) => ({ url: `${base}/news/${n.slug}`, lastModified: n.updatedAt, changeFrequency: "daily" as const, priority: 0.7 })),
   ];
 }
