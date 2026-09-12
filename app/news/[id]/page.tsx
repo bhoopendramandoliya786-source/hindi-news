@@ -6,7 +6,7 @@ import AdSlot from "@/components/AdSense";
 
 interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
-const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, "");
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 
 function parseInlineLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.(?:gov\.in|nic\.in|com|in|org|edu)[^\s]*)/gi;
@@ -57,11 +57,24 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!newsItem) notFound();
   if (id !== newsItem.slug) redirect(`/news/${newsItem.slug}`);
 
+  await db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch(() => null);
+
   const relatedNews = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id }, categoryId: newsItem.categoryId }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
   const fallback = relatedNews.length < 4 ? await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id } }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } }) : relatedNews;
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
   const isThin = (newsItem.content || "").trim().length < 300;
-  const schema = { "@context": "https://schema.org", "@type": "NewsArticle", headline: newsItem.title, description: newsItem.description || newsItem.title, datePublished: newsItem.publishedAt?.toISOString(), dateModified: newsItem.updatedAt.toISOString(), mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl }, image: newsItem.imageUrl ? [newsItem.imageUrl] : [], author: { "@type": "Organization", name: "Hindi News", url: SITE_URL }, publisher: { "@type": "Organization", name: "Hindi News", url: SITE_URL } };
+  const schema = {
+    "@context": "https://schema.org",
+    "@type": newsItem.isSponsored ? "Article" : "NewsArticle",
+    headline: newsItem.title,
+    description: newsItem.description || newsItem.title,
+    datePublished: newsItem.publishedAt?.toISOString(),
+    dateModified: newsItem.updatedAt.toISOString(),
+    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
+    image: newsItem.imageUrl ? [newsItem.imageUrl] : [],
+    author: { "@type": "Person", name: newsItem.authorName || "Hindi News Desk" },
+    publisher: { "@type": "Organization", name: "Hindi News", url: SITE_URL },
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 py-6 md:py-10">
@@ -70,9 +83,17 @@ export default async function NewsDetailPage({ params }: Props) {
         <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500"><Link href="/" className="hover:text-red-600">होम</Link><span>/</span><Link href={`/category/${newsItem.category.slug}`} className="text-red-600 hover:underline">{newsItem.category.name}</Link></div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-8">
-            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="rounded-full bg-red-50 px-3 py-1 font-black text-red-600">{newsItem.category.name}</span>{newsItem.isBreaking && <span className="rounded-full bg-red-600 px-3 py-1 font-black text-white">ब्रेकिंग न्यूज़</span>}<time className="text-gray-400">{new Date(newsItem.publishedAt || newsItem.createdAt).toLocaleString("hi-IN", { dateStyle: "long", timeStyle: "short" })}</time></div>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <span className="rounded-full bg-red-50 px-3 py-1 font-black text-red-600">{newsItem.category.name}</span>
+              {newsItem.isBreaking && <span className="rounded-full bg-red-600 px-3 py-1 font-black text-white">ब्रेकिंग न्यूज़</span>}
+              {newsItem.isOriginal && <span className="rounded-full bg-blue-50 px-3 py-1 font-black text-blue-700">विशेष रिपोर्ट</span>}
+              {newsItem.isSponsored && <span className="rounded-full bg-amber-50 px-3 py-1 font-black text-amber-700">प्रायोजित</span>}
+              <time className="text-gray-400">{new Date(newsItem.publishedAt || newsItem.createdAt).toLocaleString("hi-IN", { dateStyle: "long", timeStyle: "short" })}</time>
+            </div>
             <h1 className="mt-4 text-2xl font-black leading-tight text-gray-950 sm:text-3xl md:text-4xl">{newsItem.title}</h1>
             <p className="mt-4 text-sm font-semibold leading-7 text-gray-600 sm:text-base">{newsItem.description}</p>
+            <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-gray-400"><span>👁️ {newsItem.viewCount.toLocaleString("hi-IN")} views</span>{newsItem.authorName && <span>✍️ {newsItem.authorName}</span>}</div>
+            {newsItem.isSponsored && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>प्रायोजित सामग्री:</strong> {newsItem.sponsorName || "यह सामग्री एक विज्ञापनदाता द्वारा प्रायोजित है।"}{newsItem.sponsorUrl && <> · <a href={newsItem.sponsorUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline">विज्ञापनदाता की वेबसाइट</a></>}</div>}
             {newsItem.imageUrl && <div className="mt-6 overflow-hidden rounded-2xl bg-gray-100"><img src={newsItem.imageUrl} alt={newsItem.title} className="max-h-[520px] w-full object-cover" /></div>}
             <AdSlot className="my-5" />
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
