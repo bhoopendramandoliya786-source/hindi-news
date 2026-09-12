@@ -1,15 +1,16 @@
 import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
+import { cache } from "react";
 import AdSlot from "@/components/AdSense";
 
 interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 60;
 
 function parseInlineLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.(?:gov\.in|nic\.in|com|in|org|edu)[^\s]*)/gi;
@@ -39,8 +40,6 @@ function buildReadableContent(title: string, description: string | null, content
   if (original) return original;
   const summary = (description || "").trim();
   if (!summary || summary === title.trim()) return `## खबर का सार\n\n${title}`;
-
-  // उपलब्ध feed-सारांश को ही व्यवस्थित किया जाता है; नई/काल्पनिक जानकारी नहीं जोड़ी जाती।
   const sentences = summary.split(/(?<=[।!?])\s+/).filter(Boolean);
   const first = sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(" ");
   const second = sentences.slice(Math.ceil(sentences.length / 2)).join(" ");
@@ -53,7 +52,7 @@ function buildReadableContent(title: string, description: string | null, content
   ].filter(Boolean).join("\n\n");
 }
 
-async function getNews(idOrSlug: string) {
+const getNews = cache(async (idOrSlug: string) => {
   let raw = "";
   try { raw = decodeURIComponent(idOrSlug || "").trim().replace(/^\/+|\/+$/g, ""); } catch { raw = String(idOrSlug || "").trim().replace(/^\/+|\/+$/g, ""); }
   if (!raw) return null;
@@ -65,7 +64,7 @@ async function getNews(idOrSlug: string) {
     console.error("[news-detail] database read failed", error);
     return null;
   }
-}
+});
 
 function safeIso(value: Date | null | undefined) {
   try { return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : undefined; } catch { return undefined; }
@@ -99,8 +98,6 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!newsItem) notFound();
 
   const category = newsItem.category || { slug: "", name: "न्यूज़" };
-
-  // View count को response render का blocker न बनाएं।
   void db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
 
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
@@ -136,7 +133,7 @@ export default async function NewsDetailPage({ params }: Props) {
             <p className="mt-4 text-sm font-semibold leading-7 text-gray-600 sm:text-base">{newsItem.description || newsItem.title}</p>
             <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-gray-400"><span>👁️ {Number(newsItem.viewCount || 0).toLocaleString("hi-IN")} views</span>{newsItem.authorName && <span>✍️ {newsItem.authorName}</span>}</div>
             {newsItem.isSponsored && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>प्रायोजित सामग्री:</strong> {newsItem.sponsorName || "यह सामग्री एक विज्ञापनदाता द्वारा प्रायोजित है।"}{newsItem.sponsorUrl && <> · <a href={newsItem.sponsorUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline">विज्ञापनदाता की वेबसाइट</a></>}</div>}
-            {newsItem.imageUrl && <div className="mt-6 overflow-hidden rounded-2xl bg-gray-100"><img src={newsItem.imageUrl} alt={newsItem.title} className="max-h-[520px] w-full object-cover" /></div>}
+            {newsItem.imageUrl && <div className="relative mt-6 h-[280px] overflow-hidden rounded-2xl bg-gray-100 sm:h-[420px] md:h-[520px]"><Image src={newsItem.imageUrl} alt={newsItem.title} fill priority sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" /></div>}
             <AdSlot className="my-5" />
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
             <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
