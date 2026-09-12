@@ -66,6 +66,20 @@ const getNews = cache(async (idOrSlug: string) => {
   }
 });
 
+const getRelatedNews = cache(async (categoryId: string, excludeId: string) => {
+  try {
+    return await db.news.findMany({
+      where: { status: "PUBLISHED", categoryId, id: { not: excludeId } },
+      orderBy: [{ publishedAt: "desc" }, { viewCount: "desc" }],
+      take: 5,
+      select: { id: true, title: true, imageUrl: true, publishedAt: true, createdAt: true },
+    });
+  } catch (error) {
+    console.error("[news-detail] related news failed", error);
+    return [];
+  }
+});
+
 function safeIso(value: Date | null | undefined) {
   try { return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : undefined; } catch { return undefined; }
 }
@@ -98,6 +112,7 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!newsItem) notFound();
 
   const category = newsItem.category || { slug: "", name: "न्यूज़" };
+  const relatedNews = await getRelatedNews(newsItem.categoryId, newsItem.id);
   void db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
 
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
@@ -114,10 +129,20 @@ export default async function NewsDetailPage({ params }: Props) {
     author: { "@type": "Person", name: newsItem.authorName || "Hindi News Desk" },
     publisher: { "@type": "Organization", name: "Hindi News", url: SITE_URL },
   };
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "होम", item: SITE_URL },
+      ...(category.slug ? [{ "@type": "ListItem", position: 2, name: category.name, item: `${SITE_URL}/category/${category.slug}` }] : []),
+      { "@type": "ListItem", position: category.slug ? 3 : 2, name: newsItem.title, item: articleUrl },
+    ],
+  };
 
   return (
     <main className="min-h-screen bg-gray-50 py-6 md:py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="mx-auto max-w-6xl px-4">
         <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500"><Link href="/">होम</Link><span>/</span>{category.slug ? <Link href={`/category/${category.slug}`} className="text-red-600 hover:underline">{category.name}</Link> : <span>न्यूज़</span>}</div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -142,11 +167,13 @@ export default async function NewsDetailPage({ params }: Props) {
               <div className="article-body">{renderFormattedContent(bodyText)}</div>
             </section>
             <AdSlot className="my-5" />
-            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">समाचार फ़ीड</span></div>}
+            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">{newsItem.sourceName}</span>{newsItem.sourceUrl && <> · <a href={newsItem.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-red-600 hover:underline">मूल स्रोत देखें ↗</a></>}</div>}
           </article>
           <aside className="space-y-6">
             <AdSlot className="my-0" />
-            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 ताज़ा खबरें</h2><Link href="/" className="text-xs font-black text-red-600">सभी →</Link></div><p className="text-sm leading-7 text-gray-600">अभी मुख्य खबर को तेजी से दिखाया गया है ताकि पढ़ने में अनावश्यक देरी न हो। बाकी ताज़ा खबरें होम पेज पर देखें।</p></div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 संबंधित खबरें</h2><Link href={category.slug ? `/category/${category.slug}` : "/"} className="text-xs font-black text-red-600">सभी →</Link></div>
+              {relatedNews.length ? <div className="space-y-4">{relatedNews.map((item) => <Link key={item.id} href={`/news/${item.id}`} className="group flex gap-3"><div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">{item.imageUrl ? <Image src={item.imageUrl} alt="" fill sizes="80px" className="object-cover" /> : null}</div><div className="min-w-0"><p className="line-clamp-2 text-sm font-bold leading-6 text-gray-800 group-hover:text-red-600">{item.title}</p><time className="text-[11px] text-gray-400">{new Date(item.publishedAt || item.createdAt).toLocaleDateString("hi-IN")}</time></div></Link>)}</div> : <p className="text-sm leading-7 text-gray-600">इस खबर से जुड़ी दूसरी खबरें जल्द यहाँ दिखाई जाएंगी।</p>}
+            </div>
             <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">📲 WhatsApp</h2><p className="mt-2 text-xs leading-5 text-gray-300">ताज़ा खबरों के अपडेट के लिए चैनल से जुड़ें।</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-green-500 px-4 py-2 text-xs font-black">जुड़ें →</a></div>
           </aside>
         </div>

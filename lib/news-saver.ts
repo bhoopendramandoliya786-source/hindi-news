@@ -23,6 +23,19 @@ function normalizeTitle(value: string) {
     .trim();
 }
 
+function titleTokens(value: string) {
+  return new Set(normalizeTitle(value).split(" ").filter((token) => token.length >= 2));
+}
+
+function titleSimilarity(a: string, b: string) {
+  const left = titleTokens(a);
+  const right = titleTokens(b);
+  if (!left.size || !right.size) return 0;
+  let common = 0;
+  for (const token of left) if (right.has(token)) common++;
+  return common / Math.max(left.size, right.size);
+}
+
 export async function saveIndiaNews() {
   const articles = await fetchAllHindiNews();
   let saved = 0;
@@ -43,6 +56,15 @@ export async function saveIndiaNews() {
     }
   }
 
+  // Load a bounded recent window once so punctuation/word-order variations
+  // cannot create obvious duplicate stories without making one DB query per item.
+  const recentTitles = await (db as any).news.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { publishedAt: "desc" },
+    take: 500,
+    select: { id: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true },
+  });
+
   for (const article of articles) {
     try {
       const categoryId = categoryCache[article.categorySlug];
@@ -60,8 +82,6 @@ export async function saveIndiaNews() {
       });
 
       if (existing) {
-        // Enrich an existing item when the feed later provides a better
-        // description/image, while keeping the article URL stable.
         const currentNormalized = normalizeTitle(existing.title || "");
         const shouldRefresh =
           (!existing.description && !!article.description) ||
@@ -87,6 +107,12 @@ export async function saveIndiaNews() {
         continue;
       }
 
+      const duplicate = recentTitles.find((item: any) => titleSimilarity(article.title, item.title) >= 0.88);
+      if (duplicate) {
+        skipped++;
+        continue;
+      }
+
       const processed = processNews(article, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
 
       try {
@@ -106,6 +132,15 @@ export async function saveIndiaNews() {
             publishedAt: processed.publishedAt || new Date(),
           },
         });
+        recentTitles.unshift({
+          id: "new",
+          title: processed.title,
+          description: processed.description,
+          content: processed.content,
+          imageUrl: processed.imageUrl,
+          sourceUrl: processed.sourceUrl,
+        });
+        if (recentTitles.length > 500) recentTitles.pop();
         saved++;
       } catch (error: any) {
         const message = String(error?.message || error || "");
