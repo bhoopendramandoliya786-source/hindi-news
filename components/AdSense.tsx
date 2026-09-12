@@ -1,5 +1,6 @@
 "use client";
 
+import Script from "next/script";
 import { useEffect } from "react";
 
 export function AdSenseScript() {
@@ -7,9 +8,9 @@ export function AdSenseScript() {
   if (!clientId) return null;
 
   return (
-    <script
-      async
+    <Script
       src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${clientId}`}
+      strategy="afterInteractive"
       crossOrigin="anonymous"
     />
   );
@@ -40,17 +41,8 @@ export default function AdSlot({
 
   return (
     <div className={`my-6 overflow-hidden rounded-xl ${className}`}>
-      <div className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400">
-        विज्ञापन
-      </div>
-      <ins
-        className="adsbygoogle block"
-        style={{ display: "block", minHeight: 90 }}
-        data-ad-client={clientId}
-        data-ad-slot={slot}
-        data-ad-format="auto"
-        data-full-width-responsive="true"
-      />
+      <div className="mb-1 text-center text-[10px] font-semibold uppercase tracking-wider text-gray-400">विज्ञापन</div>
+      <ins className="adsbygoogle block" style={{ display: "block", minHeight: 90 }} data-ad-client={clientId} data-ad-slot={slot} data-ad-format="auto" data-full-width-responsive="true" />
     </div>
   );
 }
