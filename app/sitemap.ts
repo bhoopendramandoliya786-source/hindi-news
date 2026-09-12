@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { db } from "@/lib/db";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://example.com").replace(/\/$/, "");
+  const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
   const [categories, news] = await Promise.all([
     db.category.findMany({ select: { slug: true, updatedAt: true } }),
     db.news.findMany({ where: { status: "PUBLISHED" }, select: { slug: true, updatedAt: true, publishedAt: true, content: true }, orderBy: { publishedAt: "desc" }, take: 20000 }),
@@ -10,8 +10,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const indexableNews = news.filter((item) => (item.content || "").trim().length >= 300);
   return [
     { url: base, changeFrequency: "hourly", priority: 1 },
-    { url: `${base}/search`, changeFrequency: "daily", priority: 0.5 },
+    { url: `${base}/trending`, changeFrequency: "hourly", priority: 0.9 },
     { url: `${base}/jobs`, changeFrequency: "hourly", priority: 0.9 },
+    { url: `${base}/search`, changeFrequency: "daily", priority: 0.5 },
     { url: `${base}/about`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/contact`, changeFrequency: "monthly", priority: 0.3 },
     { url: `${base}/advertise`, changeFrequency: "monthly", priority: 0.3 },
