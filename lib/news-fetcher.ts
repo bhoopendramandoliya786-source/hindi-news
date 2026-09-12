@@ -9,41 +9,31 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-// हर कैटेगरी के लिए हाई-क्वालिटी HD बैकअप इमेज (अगर RSS में फ़ोटो न हो तो यह दिखेगी)
-const CATEGORY_DEFAULT_IMAGES: Record<string, string> = {
-  sports: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=800&auto=format&fit=crop&q=80",
-  technology: "https://images.unsplash.com/photo-1518770660439-4636190af475?w=800&auto=format&fit=crop&q=80",
-  business: "https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800&auto=format&fit=crop&q=80",
-  entertainment: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=800&auto=format&fit=crop&q=80",
-  india: "https://images.unsplash.com/photo-1532375810709-75b1da00537c?w=800&auto=format&fit=crop&q=80",
-  world: "https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1?w=800&auto=format&fit=crop&q=80",
-  rajasthan: "https://images.unsplash.com/photo-1599661046289-e31897846e41?w=800&auto=format&fit=crop&q=80",
-};
-
+// NDTV और लाइव इमेज सपोर्ट करने वाले फ़ीड्स (हर खबर की असली फोटो के साथ)
 const FEEDS: Record<string, { url: string; source: string }> = {
   india: {
-    url: "https://navbharattimes.indiatimes.com/rssfeedsdefault.cms",
-    source: "नवभारत टाइम्स",
+    url: "https://feeds.feedburner.com/ndtvkhabar-latest",
+    source: "NDTV इंडिया",
   },
   sports: {
-    url: "https://www.amarujala.com/rss/sports-news.xml",
-    source: "अमर उजाला",
-  },
-  business: {
-    url: "https://www.amarujala.com/rss/business-news.xml",
-    source: "अमर उजाला",
-  },
-  technology: {
-    url: "https://www.amarujala.com/rss/technology-news.xml",
-    source: "अमर उजाला",
+    url: "https://feeds.feedburner.com/ndtvkhabar-sports",
+    source: "NDTV स्पोर्ट्स",
   },
   entertainment: {
-    url: "https://www.amarujala.com/rss/entertainment-news.xml",
-    source: "अमर उजाला",
+    url: "https://feeds.feedburner.com/ndtvkhabar-entertainment",
+    source: "NDTV सिनेमा",
+  },
+  business: {
+    url: "https://feeds.feedburner.com/ndtvkhabar-business",
+    source: "NDTV बिज़नेस",
+  },
+  technology: {
+    url: "https://feeds.feedburner.com/ndtvkhabar-gadgets",
+    source: "NDTV टेक",
   },
   world: {
-    url: "https://www.amarujala.com/rss/world-news.xml",
-    source: "अमर उजाला",
+    url: "https://feeds.feedburner.com/ndtvkhabar-world",
+    source: "NDTV दुनिया",
   },
   rajasthan: {
     url: "https://feed.bhaskar.com/rss/1154",
@@ -70,13 +60,17 @@ function extractTag(xml: string, tag: string): string {
   return match ? cleanHtml(match[1]) : "";
 }
 
+// हर खबर की असली फोटो का लिंक निकालने का सटीक तरीका
 function extractImageUrl(xml: string): string | null {
-  const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
-  if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
-
+  // 1. media:content url="..."
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
   if (mediaMatch && mediaMatch[1] && mediaMatch[1].startsWith("http")) return mediaMatch[1];
 
+  // 2. enclosure url="..."
+  const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
+  if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
+
+  // 3. description या fulltext में <img src="...">
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
   if (imgMatch && imgMatch[1] && imgMatch[1].startsWith("http")) return imgMatch[1];
 
@@ -122,9 +116,8 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
         description = title;
       }
 
-      // अगर RSS में फ़ोटो मिली तो वह, नहीं तो कैटेगरी की प्रीमियम डिफ़ॉल्ट फ़ोटो
-      const rawImage = extractImageUrl(itemXml);
-      const imageUrl = rawImage || CATEGORY_DEFAULT_IMAGES[categorySlug] || CATEGORY_DEFAULT_IMAGES.india;
+      // यहाँ से खबर की असली फोटो मिलेगी
+      const imageUrl = extractImageUrl(itemXml);
 
       articles.push({
         title,
@@ -162,4 +155,4 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
   }
 
   return allNews;
-        }
+}
