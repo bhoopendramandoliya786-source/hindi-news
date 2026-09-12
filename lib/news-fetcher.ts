@@ -9,7 +9,8 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-// NDTV और लाइव इमेज सपोर्ट करने वाले फ़ीड्स (हर खबर की असली फोटो के साथ)
+// भरोसेमंद हिंदी न्यूज़ फ़ीड्स। साइट पर केवल headline/संक्षिप्त सारांश
+// दिखाया जाता है; पूरा मूल लेख कॉपी नहीं किया जाता।
 const FEEDS: Record<string, { url: string; source: string }> = {
   india: {
     url: "https://feeds.feedburner.com/ndtvkhabar-latest",
@@ -45,12 +46,16 @@ function cleanHtml(raw: string): string {
   if (!raw) return "";
   return raw
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1")
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
     .replace(/<[^>]+>/g, "")
     .replace(/&nbsp;/gi, " ")
     .replace(/&quot;/gi, '"')
     .replace(/&amp;/gi, "&")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/https?:\/\/\S+/gi, "")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -62,19 +67,29 @@ function extractTag(xml: string, tag: string): string {
 
 // हर खबर की असली फोटो का लिंक निकालने का सटीक तरीका
 function extractImageUrl(xml: string): string | null {
-  // 1. media:content url="..."
   const mediaMatch = xml.match(/<media:content[^>]*url=["']([^"']+)["']/i);
   if (mediaMatch && mediaMatch[1] && mediaMatch[1].startsWith("http")) return mediaMatch[1];
 
-  // 2. enclosure url="..."
   const encMatch = xml.match(/<enclosure[^>]*url=["']([^"']+)["']/i);
   if (encMatch && encMatch[1] && encMatch[1].startsWith("http")) return encMatch[1];
 
-  // 3. description या fulltext में <img src="...">
   const imgMatch = xml.match(/<img[^>]*src=["']([^"']+)["']/i);
   if (imgMatch && imgMatch[1] && imgMatch[1].startsWith("http")) return imgMatch[1];
 
   return null;
+}
+
+function makeSummary(title: string, rawDescription: string): string {
+  let text = cleanHtml(rawDescription);
+  if (!text || text.length < 25 || text.toLowerCase() === title.toLowerCase()) {
+    return title;
+  }
+
+  // Feed के बहुत लंबे टेक्स्ट को छोटा, पढ़ने योग्य सारांश रखें।
+  // पूरा मूल लेख कॉपी नहीं किया जाता।
+  text = text.replace(/\s*\|\s*(NDTV|दैनिक भास्कर).*$/i, "").trim();
+  if (text.length > 420) text = `${text.slice(0, 417).replace(/\s+\S*$/, "")}...`;
+  return text || title;
 }
 
 export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> {
@@ -110,13 +125,8 @@ export async function fetchCategoryNews(categorySlug: string): Promise<Normalize
       const link = linkMatch ? cleanHtml(linkMatch[1]) : "";
 
       const pubDateStr = extractTag(itemXml, "pubDate");
-      let description = extractTag(itemXml, "description") || title;
-
-      if (description.includes("http") || description.length < 15) {
-        description = title;
-      }
-
-      // यहाँ से खबर की असली फोटो मिलेगी
+      const rawDescription = extractTag(itemXml, "description");
+      const description = makeSummary(title, rawDescription);
       const imageUrl = extractImageUrl(itemXml);
 
       articles.push({
@@ -149,9 +159,7 @@ export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
 
   const allNews: NormalizedNews[] = [];
   for (const r of results) {
-    if (r.status === "fulfilled") {
-      allNews.push(...r.value);
-    }
+    if (r.status === "fulfilled") allNews.push(...r.value);
   }
 
   return allNews;
