@@ -34,6 +34,25 @@ function renderFormattedContent(text: string) {
   return elements;
 }
 
+function buildReadableContent(title: string, description: string | null, content: string | null) {
+  const original = (content || "").trim();
+  if (original) return original;
+  const summary = (description || "").trim();
+  if (!summary || summary === title.trim()) return `## खबर का सार\n\n${title}`;
+
+  // उपलब्ध feed-सारांश को ही व्यवस्थित किया जाता है; नई/काल्पनिक जानकारी नहीं जोड़ी जाती।
+  const sentences = summary.split(/(?<=[।!?])\s+/).filter(Boolean);
+  const first = sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(" ");
+  const second = sentences.slice(Math.ceil(sentences.length / 2)).join(" ");
+  return [
+    "## खबर का सार",
+    first,
+    second ? `\n## मुख्य जानकारी\n${second}` : "",
+    "\n## जरूरी बात",
+    "यह विवरण उपलब्ध समाचार फ़ीड में दी गई जानकारी पर आधारित है। जैसे ही अधिक सत्यापित जानकारी उपलब्ध होगी, खबर को अपडेट किया जा सकता है।",
+  ].filter(Boolean).join("\n\n");
+}
+
 async function getNews(idOrSlug: string) {
   let raw = "";
   try { raw = decodeURIComponent(idOrSlug || "").trim().replace(/^\/+|\/+$/g, ""); } catch { raw = String(idOrSlug || "").trim().replace(/^\/+|\/+$/g, ""); }
@@ -80,21 +99,12 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!newsItem) notFound();
 
   const category = newsItem.category || { slug: "", name: "न्यूज़" };
-  await db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
 
-  let fallback: typeof newsItem[] = [];
-  try {
-    const relatedNews = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id }, categoryId: newsItem.categoryId }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
-    fallback = relatedNews;
-    if (relatedNews.length < 4) {
-      fallback = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id } }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
-    }
-  } catch (error) {
-    console.error("[news-detail] related news read failed", error);
-  }
+  // View count को response render का blocker न बनाएं।
+  void db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
 
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
-  const bodyText = (newsItem.content || "").trim() || (newsItem.description || "").trim() || newsItem.title;
+  const bodyText = buildReadableContent(newsItem.title, newsItem.description, newsItem.content);
   const schema = {
     "@context": "https://schema.org",
     "@type": newsItem.isSponsored ? "Article" : "NewsArticle",
@@ -131,15 +141,15 @@ export default async function NewsDetailPage({ params }: Props) {
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
             <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
             <section aria-label="खबर की पूरी जानकारी" className="mt-8 border-t border-gray-100 pt-6">
-              <h2 className="mb-4 text-xl font-black text-gray-950">पूरी खबर पढ़ें</h2>
+              <h2 className="mb-4 text-xl font-black text-gray-950">विस्तृत जानकारी</h2>
               <div className="article-body">{renderFormattedContent(bodyText)}</div>
             </section>
             <AdSlot className="my-5" />
-            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">{newsItem.sourceName}</span></div>}
+            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">समाचार फ़ीड</span></div>}
           </article>
           <aside className="space-y-6">
             <AdSlot className="my-0" />
-            {fallback.length > 0 && <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 इससे जुड़ी खबरें</h2>{category.slug && <Link href={`/category/${category.slug}`} className="text-xs font-black text-red-600">सभी →</Link>}</div><div className="space-y-4">{fallback.map(rel => <Link key={rel.id} href={`/news/${rel.id}`} className="group flex gap-3 border-b border-gray-100 pb-4 last:border-0"><div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">{rel.imageUrl ? <img src={rel.imageUrl} alt={rel.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-red-600">न्यूज़</div>}</div><h3 className="line-clamp-3 text-sm font-bold leading-5 text-gray-900 group-hover:text-red-600">{rel.title}</h3></Link>)}</div></div>}
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 ताज़ा खबरें</h2><Link href="/" className="text-xs font-black text-red-600">सभी →</Link></div><p className="text-sm leading-7 text-gray-600">अभी मुख्य खबर को तेजी से दिखाया गया है ताकि पढ़ने में अनावश्यक देरी न हो। बाकी ताज़ा खबरें होम पेज पर देखें।</p></div>
             <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">📲 WhatsApp</h2><p className="mt-2 text-xs leading-5 text-gray-300">ताज़ा खबरों के अपडेट के लिए चैनल से जुड़ें।</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-green-500 px-4 py-2 text-xs font-black">जुड़ें →</a></div>
           </aside>
         </div>
