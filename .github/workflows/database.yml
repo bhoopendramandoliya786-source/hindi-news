@@ -1,30 +1,32 @@
-name: Update Database
+name: Update News Database
 
 on:
   workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
 
 jobs:
   database:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 5
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install
-
       - name: Generate Prisma Client
         run: npx prisma generate
-
       - name: Push Prisma Schema
         run: npx prisma db push
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
-          
+      - name: Fetch and publish fresh news
+        run: npm run fetch:news
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DIRECT_URL: ${{ secrets.DIRECT_URL }}
