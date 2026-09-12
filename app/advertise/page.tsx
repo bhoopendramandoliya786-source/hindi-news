@@ -4,7 +4,7 @@ export const metadata = {
 };
 
 export default function AdvertisePage() {
-  const email = process.env.NEXT_PUBLIC_ADVERTISING_EMAIL || "contact@hindi-news.example";
+  const email = process.env.NEXT_PUBLIC_ADVERTISING_EMAIL || "hindinews.contactme@gmail.com";
 
   return (
     <main className="min-h-screen bg-gray-50 py-10">
