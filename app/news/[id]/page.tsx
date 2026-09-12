@@ -6,6 +6,89 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
+// टेक्स्ट को सुंदर हेडिंग्स, बुलेट पॉइंट्स और पैराग्राफ में बदलने वाला इंजन
+function renderFormattedContent(text: string) {
+  if (!text) return null;
+
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let listItems: string[] = [];
+
+  const flushList = () => {
+    if (listItems.length > 0) {
+      elements.push(
+        <ul key={`list-${elements.length}`} className="my-4 space-y-2 list-disc pl-6 text-gray-800">
+          {listItems.map((item, idx) => (
+            <li key={idx} className="leading-relaxed">{item}</li>
+          ))}
+        </ul>
+      );
+      listItems = [];
+    }
+  };
+
+  lines.forEach((rawLine, index) => {
+    const line = rawLine.trim();
+
+    if (!line) {
+      flushList();
+      return;
+    }
+
+    // 1. अगर हेडिंग है (### से शुरू होती है)
+    if (line.startsWith("###")) {
+      flushList();
+      const headingText = line.replace(/^###\s*/, "");
+      elements.push(
+        <h3
+          key={`h3-${index}`}
+          className="mt-8 mb-4 border-l-4 border-red-600 bg-gray-50 pl-3 py-1.5 text-lg sm:text-xl font-black text-gray-900 rounded-r-lg"
+        >
+          {headingText}
+        </h3>
+      );
+      return;
+    }
+
+    // 2. अगर डिवाइडर लाइन है (---)
+    if (line === "---") {
+      flushList();
+      elements.push(<hr key={`hr-${index}`} className="my-6 border-gray-200" />);
+      return;
+    }
+
+    // 3. अगर बुलेट पॉइंट है (* या • या - से शुरू)
+    if (line.startsWith("*") || line.startsWith("•") || (line.startsWith("-") && !line.startsWith("---"))) {
+      const cleanItem = line.replace(/^[*•-]\s*/, "");
+      listItems.push(cleanItem);
+      return;
+    }
+
+    // 4. अगर नंबर वाली लिस्ट है (1. 2. 3.)
+    if (/^\d+\.\s/.test(line)) {
+      flushList();
+      elements.push(
+        <div key={`num-${index}`} className="my-2 flex gap-3 text-gray-800 leading-relaxed font-medium">
+          <span className="shrink-0 font-bold text-red-600">{line.match(/^\d+\./)?.[0]}</span>
+          <span>{line.replace(/^\d+\.\s*/, "")}</span>
+        </div>
+      );
+      return;
+    }
+
+    // 5. अगर साधारण पैराग्राफ है
+    flushList();
+    elements.push(
+      <p key={`p-${index}`} className="my-3 text-base sm:text-lg leading-loose text-gray-800">
+        {line}
+      </p>
+    );
+  });
+
+  flushList();
+  return elements;
+}
+
 export default async function NewsDetailPage({ params }: Props) {
   const { id } = await params;
 
@@ -32,7 +115,7 @@ export default async function NewsDetailPage({ params }: Props) {
   return (
     <main className="min-h-screen bg-gray-50/50 py-6 md:py-10 relative">
       
-      {/* 🟢 स्क्रीन पर तैरता फ्लोटिंग WhatsApp बटन */}
+      {/* 🟢 स्क्रीन पर तैरता WhatsApp बटन */}
       <div className="fixed bottom-6 right-4 z-50">
         <a
           href={WHATSAPP_LINK}
@@ -46,7 +129,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
       <div className="container mx-auto max-w-5xl px-4">
         
-        {/* Breadcrumb Navigation */}
+        {/* Breadcrumb */}
         <div className="mb-4 flex items-center gap-2 text-xs font-semibold text-gray-500">
           <Link href="/" className="hover:text-red-600">होम</Link>
           <span>/</span>
@@ -57,7 +140,7 @@ export default async function NewsDetailPage({ params }: Props) {
 
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           
-          {/* Main Article Area */}
+          {/* Main Article */}
           <article className="rounded-2xl border border-gray-100 bg-white p-5 md:p-8 shadow-sm lg:col-span-2">
             
             <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
@@ -89,9 +172,9 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* In-Article WhatsApp Join Box */}
-            <div className="my-6 rounded-xl border border-dashed border-green-300 bg-green-50/80 p-5 text-center">
-              <p className="text-sm font-bold text-gray-900 mb-3">
+            {/* In-Article Community Join Box */}
+            <div className="my-6 rounded-xl border border-dashed border-green-300 bg-green-50/80 p-4 text-center">
+              <p className="text-sm font-bold text-gray-900 mb-2">
                 📢 सरकारी नौकरी, रिजल्ट और ताज़ा खबरों के तुरंत अपडेट पाने के लिए हमारे चैनल से जुड़ें:
               </p>
               <div className="flex justify-center">
@@ -99,7 +182,7 @@ export default async function NewsDetailPage({ params }: Props) {
                   href={WHATSAPP_LINK}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-xs font-bold text-white shadow hover:bg-green-700 transition"
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2 text-xs font-bold text-white shadow hover:bg-green-700 transition"
                 >
                   <span>💬</span> व्हाट्सएप चैनल से जुड़ें 👉
                 </a>
@@ -113,9 +196,9 @@ export default async function NewsDetailPage({ params }: Props) {
               </div>
             )}
 
-            {/* News Body Text */}
-            <div className="text-base sm:text-lg leading-loose text-gray-800 space-y-4">
-              <p>{newsItem.content || newsItem.description}</p>
+            {/* Formatted Content Area */}
+            <div className="article-body">
+              {renderFormattedContent(newsItem.content || newsItem.description)}
             </div>
 
             {/* Footer Navigation */}
@@ -173,4 +256,4 @@ export default async function NewsDetailPage({ params }: Props) {
       </div>
     </main>
   );
-}
+        }
