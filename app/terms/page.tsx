@@ -1,0 +1,2 @@
+export const metadata = { title: "Terms & Conditions" };
+export default function Terms(){return <main className="min-h-screen bg-gray-50 py-10"><article className="mx-auto max-w-3xl rounded-2xl bg-white p-6 shadow-sm sm:p-10"><h1 className="text-3xl font-black">Terms & Conditions</h1><div className="mt-6 space-y-4 leading-8 text-gray-700"><p>इस वेबसाइट की सामग्री सामान्य सूचना के लिए है। महत्वपूर्ण जानकारी के लिए संबंधित आधिकारिक स्रोत से सत्यापन करें।</p><p>वेबसाइट का अनुचित उपयोग, automated abuse या unauthorized access निषिद्ध है।</p></div></article></main>}
