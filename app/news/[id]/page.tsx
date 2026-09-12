@@ -8,8 +8,6 @@ interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 
-// Article pages must always read the current database state. This also prevents
-// an old cached route from continuing to show "खबर नहीं मिली" after a publish.
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -37,33 +35,27 @@ function renderFormattedContent(text: string) {
 }
 
 async function getNews(idOrSlug: string) {
-  const raw = decodeURIComponent(idOrSlug || "").trim();
+  const raw = decodeURIComponent(idOrSlug || "").trim().replace(/^\/+|\/+$/g, "");
   if (!raw) return null;
 
-  // First try the canonical published record. Slugs are generated in lowercase,
-  // but insensitive matching also keeps older articles working after slug changes.
-  const exact = await db.news.findFirst({
-    where: {
-      status: "PUBLISHED",
-      OR: [
-        { id: raw },
-        { slug: { equals: raw, mode: "insensitive" } },
-      ],
-    },
-    include: { category: true },
-  });
-  if (exact) return exact;
-
-  // Legacy/imported records may have a trailing slash or slightly different slug
-  // casing. A second slug-only lookup avoids a false "खबर नहीं मिली" for a real article.
-  const normalizedSlug = raw.replace(/^\/+|\/+$/g, "");
-  if (normalizedSlug !== raw) {
-    return db.news.findFirst({
-      where: { status: "PUBLISHED", slug: { equals: normalizedSlug, mode: "insensitive" } },
+  try {
+    // Public cards use the slug, so prefer the indexed exact slug lookup.
+    const bySlug = await db.news.findFirst({
+      where: { status: "PUBLISHED", slug: raw },
       include: { category: true },
     });
+    if (bySlug) return bySlug;
+
+    // Keep old ID-based links working as well.
+    const byId = await db.news.findFirst({
+      where: { status: "PUBLISHED", id: raw },
+      include: { category: true },
+    });
+    return byId;
+  } catch (error) {
+    console.error("[news-detail] database read failed", error);
+    return null;
   }
-  return null;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -88,10 +80,19 @@ export default async function NewsDetailPage({ params }: Props) {
   if (!newsItem) notFound();
   if (id !== newsItem.slug) redirect(`/news/${newsItem.slug}`);
 
-  await db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch(() => null);
+  await db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
 
-  const relatedNews = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id }, categoryId: newsItem.categoryId }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
-  const fallback = relatedNews.length < 4 ? await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id } }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } }) : relatedNews;
+  let fallback: typeof newsItem[] = [];
+  try {
+    const relatedNews = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id }, categoryId: newsItem.categoryId }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
+    fallback = relatedNews;
+    if (relatedNews.length < 4) {
+      fallback = await db.news.findMany({ where: { status: "PUBLISHED", id: { not: newsItem.id } }, orderBy: { publishedAt: "desc" }, take: 6, include: { category: true } });
+    }
+  } catch (error) {
+    console.error("[news-detail] related news read failed", error);
+  }
+
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
   const isThin = (newsItem.content || "").trim().length < 300;
   const schema = {
@@ -136,7 +137,7 @@ export default async function NewsDetailPage({ params }: Props) {
           </article>
           <aside className="space-y-6">
             <AdSlot className="my-0" />
-            <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 इससे जुड़ी खबरें</h2><Link href={`/category/${newsItem.category.slug}`} className="text-xs font-black text-red-600">सभी →</Link></div><div className="space-y-4">{fallback.map(rel => <Link key={rel.id} href={`/news/${rel.slug}`} className="group flex gap-3 border-b border-gray-100 pb-4 last:border-0"><div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">{rel.imageUrl ? <img src={rel.imageUrl} alt={rel.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-red-600">न्यूज़</div>}</div><h3 className="line-clamp-3 text-sm font-bold leading-5 text-gray-900 group-hover:text-red-600">{rel.title}</h3></Link>)}</div></div>
+            {fallback.length > 0 && <div className="rounded-2xl bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 इससे जुड़ी खबरें</h2><Link href={`/category/${newsItem.category.slug}`} className="text-xs font-black text-red-600">सभी →</Link></div><div className="space-y-4">{fallback.map(rel => <Link key={rel.id} href={`/news/${rel.slug}`} className="group flex gap-3 border-b border-gray-100 pb-4 last:border-0"><div className="h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">{rel.imageUrl ? <img src={rel.imageUrl} alt={rel.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-xs text-red-600">न्यूज़</div>}</div><h3 className="line-clamp-3 text-sm font-bold leading-5 text-gray-900 group-hover:text-red-600">{rel.title}</h3></Link>)}</div></div>}
             <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">📲 WhatsApp</h2><p className="mt-2 text-xs leading-5 text-gray-300">ताज़ा खबरों के अपडेट के लिए चैनल से जुड़ें।</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-green-500 px-4 py-2 text-xs font-black">जुड़ें →</a></div>
           </aside>
         </div>
