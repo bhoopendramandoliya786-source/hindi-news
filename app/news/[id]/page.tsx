@@ -132,13 +132,13 @@ export default async function NewsDetailPage({ params }: Props) {
             <AdSlot className="my-5" />
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
             <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
-            {isThin && <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-orange-900"><strong>संक्षिप्त अपडेट:</strong> यह खबर उपलब्ध स्रोत से मिले संक्षिप्त विवरण पर आधारित है। विस्तृत जानकारी के लिए मूल स्रोत देखें।</div>}
+            {isThin && <div className="mb-5 rounded-xl border border-orange-200 bg-orange-50 p-4 text-sm leading-6 text-orange-900"><strong>संक्षिप्त अपडेट:</strong> यह खबर उपलब्ध स्रोत से मिले संक्षिप्त विवरण पर आधारित है।</div>}
             <section aria-label="खबर की पूरी जानकारी" className="mt-8 border-t border-gray-100 pt-6">
               <h2 className="mb-4 text-xl font-black text-gray-950">पूरी खबर पढ़ें</h2>
               <div className="article-body">{renderFormattedContent(bodyText)}</div>
             </section>
             <AdSlot className="my-5" />
-            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">{newsItem.sourceName}</span>{newsItem.sourceUrl && <> · <a href={newsItem.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 hover:underline">मूल स्रोत देखें ↗</a></>}</div>}
+            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">{newsItem.sourceName}</span></div>}
           </article>
           <aside className="space-y-6">
             <AdSlot className="my-0" />
