@@ -1,8 +1,10 @@
 import Link from "next/link";
+import Image from "next/image";
 import { db } from "@/lib/db";
 import AdSlot from "@/components/AdSense";
+import { AdsterraBanner } from "@/components/AdsterraAds";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 60;
 
 export default async function JobsPage() {
   const category = await db.category.findUnique({ where: { slug: "jobs" }, include: { news: { where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 50 } } });
@@ -20,8 +22,9 @@ export default async function JobsPage() {
           <p className="mt-1 text-sm leading-6 text-gray-600">Recruitment campaign, coaching institute या career service के लिए sponsored promotion उपलब्ध है।</p>
           <Link href="/advertise" className="mt-3 inline-block rounded-xl bg-red-600 px-4 py-2 text-sm font-black text-white">विज्ञापन की जानकारी →</Link>
         </div>
+        <AdsterraBanner />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {category?.news.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl bg-white shadow-sm"><Link href={`/news/${item.slug}`}><div className="h-48 bg-gray-100">{item.imageUrl ? <img src={item.imageUrl} alt={item.title} className="h-full w-full object-cover" /> : <div className="flex h-full items-center justify-center text-red-600">सरकारी नौकरी</div>}</div><div className="p-4"><h2 className="font-black text-gray-950 hover:text-red-600">{item.title}</h2><p className="mt-2 line-clamp-2 text-sm text-gray-500">{item.description}</p></div></Link></article>)}
+          {category?.news.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl bg-white shadow-sm"><Link href={`/news/${item.slug}`}><div className="relative h-48 bg-gray-100">{item.imageUrl ? <Image src={item.imageUrl} alt={item.title} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover" /> : <div className="flex h-full items-center justify-center text-red-600">सरकारी नौकरी</div>}</div><div className="p-4"><h2 className="font-black text-gray-950 hover:text-red-600">{item.title}</h2><p className="mt-2 line-clamp-2 text-sm text-gray-500">{item.description}</p></div></Link></article>)}
         </div>
         {(!category || category.news.length === 0) && <div className="mt-6 rounded-2xl bg-white p-12 text-center text-gray-500">अभी कोई भर्ती खबर उपलब्ध नहीं है।</div>}
         <AdSlot className="my-5" />
