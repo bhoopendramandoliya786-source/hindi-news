@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { saveIndiaNews } from "@/lib/news-saver";
@@ -12,7 +13,14 @@ function authorized(request: Request) {
   if (!secret) return false;
 
   const authorization = request.headers.get("authorization");
-  return authorization === `Bearer ${secret}`;
+  if (!authorization?.startsWith("Bearer ")) return false;
+
+  const provided = Buffer.from(authorization.slice(7), "utf8");
+  const expected = Buffer.from(secret, "utf8");
+
+  if (provided.length !== expected.length) return false;
+
+  return timingSafeEqual(provided, expected);
 }
 
 export async function GET(request: Request) {
