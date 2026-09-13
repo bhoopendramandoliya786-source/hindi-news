@@ -124,6 +124,8 @@ export default async function NewsDetailPage({ params }: Props) {
     description: newsItem.description || newsItem.title,
     datePublished: safeIso(newsItem.publishedAt),
     dateModified: safeIso(newsItem.updatedAt),
+    inLanguage: "hi-IN",
+    articleSection: category.name,
     mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
     image: newsItem.imageUrl ? [newsItem.imageUrl] : [],
     author: { "@type": "Person", name: newsItem.authorName || "Hindi News Desk" },
@@ -159,6 +161,10 @@ export default async function NewsDetailPage({ params }: Props) {
             <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-gray-400"><span>👁️ {Number(newsItem.viewCount || 0).toLocaleString("hi-IN")} views</span>{newsItem.authorName && <span>✍️ {newsItem.authorName}</span>}</div>
             {newsItem.isSponsored && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>प्रायोजित सामग्री:</strong> {newsItem.sponsorName || "यह सामग्री एक विज्ञापनदाता द्वारा प्रायोजित है।"}{newsItem.sponsorUrl && <> · <a href={newsItem.sponsorUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline">विज्ञापनदाता की वेबसाइट</a></>}</div>}
             {newsItem.imageUrl && <div className="relative mt-6 h-[280px] overflow-hidden rounded-2xl bg-gray-100 sm:h-[420px] md:h-[520px]"><Image src={newsItem.imageUrl} alt={newsItem.title} fill priority sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" /></div>}
+            <div className="mt-6 rounded-2xl border border-red-100 bg-red-50/60 p-5">
+              <h2 className="text-base font-black text-gray-950">एक नजर में</h2>
+              <p className="mt-2 text-sm leading-7 text-gray-700">{newsItem.description || "इस खबर की उपलब्ध सत्यापित जानकारी नीचे विस्तार से दी गई है।"}</p>
+            </div>
             <AdSlot className="my-5" />
             <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
             <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
