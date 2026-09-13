@@ -13,8 +13,17 @@ type ExistingNews = {
 };
 
 const CATEGORY_MAP: Record<string, string> = {
-  india: "भारत", rajasthan: "राजस्थान", world: "दुनिया", business: "बिज़नेस", technology: "टेक्नोलॉजी", sports: "खेल", entertainment: "मनोरंजन",
-  jobs: "सरकारी नौकरी", exams: "परीक्षा", results: "रिजल्ट", "admit-card": "एडमिट कार्ड", "current-affairs": "करंट अफेयर्स",
+  jobs: "सरकारी नौकरी",
+  exams: "परीक्षा",
+  "admit-card": "एडमिट कार्ड",
+  "answer-key": "आंसर की",
+  results: "रिजल्ट",
+  scholarship: "स्कॉलरशिप",
+  admission: "एडमिशन",
+  documents: "डॉक्यूमेंट",
+  schemes: "सरकारी योजनाएं",
+  "current-affairs": "करंट अफेयर्स",
+  "student-updates": "राजस्थान छात्र अपडेट",
 };
 
 function normalizeTitle(value: string) {
@@ -36,7 +45,7 @@ export async function saveIndiaNews() {
 
   for (const [slug, name] of Object.entries(CATEGORY_MAP)) {
     try {
-      const cat = await db.category.upsert({ where: { slug }, update: { name }, create: { name, slug, description: `${name} की ताज़ा जानकारी` } });
+      const cat = await db.category.upsert({ where: { slug }, update: { name }, create: { name, slug, description: `${name} से जुड़ी छात्र उपयोगी जानकारी` } });
       categoryCache[slug] = cat.id;
     } catch (e) { console.error("Category cache error:", e); }
   }
