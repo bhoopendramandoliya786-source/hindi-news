@@ -1,64 +1,60 @@
-# Hindi News — Project Lock
+# Hindi News — Locked Production Blueprint
 
-This file is the implementation contract for the Hindi News project. Future changes should preserve these decisions unless the owner explicitly asks to change them.
+This is the standing implementation contract for the project.
 
-## Product direction
-- ताज़ा हिंदी समाचार
-- राजस्थान समाचार
+## Product
+Hindi News is a Hindi utility/news portal covering:
+- भारत, राजस्थान और दुनिया की ताज़ा खबरें
 - सरकारी नौकरी / भर्ती
 - परीक्षाएं
 - एडमिट कार्ड
 - रिजल्ट
 - करंट अफेयर्स
-- Mobile-first, fast cached reading experience
-- Strong internal linking and search-friendly category hubs
+- शिक्षा/करियर उपयोगी अपडेट
 
-## Content rules
-1. Automatic content must come from verifiable feeds/sources.
-2. The system may clean, summarize and structure source information, but must not invent facts or copy full source articles.
-3. Source attribution remains visible where applicable.
-4. Jobs/exam information should prefer official notifications and official authority pages as the source of truth.
-5. Utility discovery now includes multi-source Google News RSS feeds for jobs, exams, results, admit cards and current affairs; these are discovery inputs, not permission to invent missing details.
-6. Duplicate prevention is required before publishing.
+## Content standard
+1. Automated inputs must be traceable to feeds or verifiable source information.
+2. Clean, summarize and structure available information; never fabricate facts.
+3. Never publish a full copied source article.
+4. For jobs/exams/results/admit cards, official notifications and authority pages are the preferred source of truth; news feeds are discovery inputs where official feeds are unavailable.
+5. Preserve source attribution.
+6. Duplicate protection is required before publishing using external IDs, exact titles and normalized-title similarity.
 
-## Traffic / SEO rules
-- Homepage, category pages and article pages remain crawlable.
-- Search pages remain noindex.
-- Canonical URLs and XML sitemaps remain enabled.
-- News sitemap contains only recent published news.
-- Internal links connect articles and category hubs.
-- Speed and useful content take priority over ad density.
-- Trending uses freshness + reader-interest scoring instead of raw lifetime views alone.
+## Traffic / SEO
+- News = fresh discovery traffic.
+- Rajasthan = regional search demand.
+- Jobs/exams/admit cards/results = high-intent search traffic.
+- Current affairs = repeat visits.
+- Internal links connect utility hubs and articles.
+- Search pages are noindex; home/category/article pages are crawlable.
+- Canonicals and XML/news sitemaps remain enabled.
+- Trending combines freshness with reader-interest rather than lifetime views alone.
 
 ## Automation
-- GitHub Actions runs the database/news workflow every 15 minutes.
-- Vercel cron remains a production safety-net sync.
-- RSS fetches use independent category feeds, 8-second timeout protection and retry handling.
-- Automatic publishing is resilient when individual feeds fail.
-- News automation covers India, Rajasthan, World, Business, Technology, Sports, Entertainment, Jobs, Exams, Results, Admit Card and Current Affairs.
+- RSS/Atom ingestion uses independent feeds, timeout protection, retry, parallel category fetching and dedupe.
+- Automatic engine covers India, Rajasthan, World, Business, Technology, Sports, Entertainment, Jobs, Exams, Results, Admit Card and Current Affairs.
+- News saver batches external-ID lookup and maintains recent-title duplicate protection.
+- New/updated news revalidates important cached pages through the cron route.
+- Vercel cron remains the production safety net; GitHub Actions may provide more frequent automation when configured.
+
+## Performance
+- Prefer ISR/revalidation over unnecessary dynamic rendering.
+- Use narrow Prisma selects on list pages.
+- Use Next/Image for news images.
+- Keep article content-first and avoid blocking reads with view-count work.
+- Third-party scripts and ads must not block primary content.
 
 ## Monetization
-Use clean display/native advertising without popunder or forced-redirect behavior.
-- Social Bar: sitewide lightweight script
-- Native Banner: inside page content after useful content begins
-- 300x250 Banner: inside page content, not before the main content
-Advertising must not replace or obscure primary content.
-
-## Engineering priorities
-1. Reliability and data correctness
-2. Page speed / caching / image optimization
-3. Article usefulness and structured information
-4. News + jobs/exams content engine
-5. SEO and indexing
-6. Internal linking / search / trending
-7. Monetization without damaging UX
-8. Security and admin protection
+- Current allowed set: Banner + Native Banner + Social Bar.
+- No popunder or forced redirect behavior.
+- Do not duplicate global ad blocks before primary content.
+- Ads must not obscure useful content.
+- Ads do not guarantee Google traffic or a specific income target.
 
 ## Deployment
-- Repository: `bhoopendramandoliya786-source/hindi-news`
-- Branch: `main`
-- Vercel remains connected to `main`.
-- Keep the current Vercel domain configuration unless explicitly requested otherwise.
+Repository: `bhoopendramandoliya786-source/hindi-news`
+Branch: `main`
+Vercel remains connected to `main`.
 
-## Operating principle
-The owner should not have to repeatedly restate this blueprint. Changes should be implemented end-to-end, kept compatible with the existing production setup, and checked for build/deployment safety before being described as complete.
+## Change policy
+Future implementation should follow this blueprint without requiring the owner to repeat it. Work is only described as complete after repository updates and deployment/build safety are checked as far as connected tooling permits.
