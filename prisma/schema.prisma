@@ -8,56 +8,72 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-enum Language { HI EN }
-enum NewsStatus { DRAFT PUBLISHED ARCHIVED }
-enum UserRole { ADMIN EDITOR }
+enum Language {
+  HI
+  EN
+}
+
+enum NewsStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum UserRole {
+  ADMIN
+  EDITOR
+}
 
 model User {
-  id String @id @default(cuid())
-  name String?
-  email String @unique
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
   passwordHash String
-  role UserRole @default(ADMIN)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role         UserRole @default(ADMIN)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
   @@index([email])
 }
+
 model Category {
-  id String @id @default(cuid())
-  name String
-  slug String @unique
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
   description String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  news News[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  news        News[]
+
   @@index([slug])
 }
+
 model News {
-  id String @id @default(cuid())
-  title String
-  slug String @unique
-  description String?
-  content String?
-  imageUrl String?
-  sourceName String?
-  sourceUrl String?
-  externalId String
-  authorName String?
-  sponsorName String?
-  sponsorUrl String?
-  language Language @default(HI)
-  status NewsStatus @default(DRAFT)
-  isFeatured Boolean @default(false)
-  isBreaking Boolean @default(false)
-  isOriginal Boolean @default(false)
-  isSponsored Boolean @default(false)
-  viewCount Int @default(0)
-  publishedAt DateTime?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  categoryId String
-  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  @@unique([externalId])
+  id           String     @id @default(cuid())
+  title        String
+  slug         String     @unique
+  description  String?
+  content      String?
+  imageUrl     String?
+  sourceName   String?
+  sourceUrl    String?
+  externalId   String     @unique
+  authorName   String?
+  sponsorName  String?
+  sponsorUrl   String?
+  language     Language   @default(HI)
+  status       NewsStatus @default(DRAFT)
+  isFeatured   Boolean    @default(false)
+  isBreaking   Boolean    @default(false)
+  isOriginal   Boolean    @default(false)
+  isSponsored  Boolean    @default(false)
+  viewCount    Int        @default(0)
+  publishedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  categoryId   String
+  category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
   @@index([categoryId])
   @@index([language])
   @@index([status])
@@ -74,19 +90,20 @@ model News {
   @@index([status, isFeatured, publishedAt])
   @@index([status, isBreaking, publishedAt])
 }
+
 model SiteSettings {
-  id String @id @default("default")
-  siteName String @default("Hindi News")
+  id              String   @id @default("default")
+  siteName        String   @default("Hindi News")
   siteDescription String?
-  logoUrl String?
-  contactEmail String?
-  contactPhone String?
-  address String?
-  websiteUrl String?
-  facebookUrl String?
-  instagramUrl String?
-  youtubeUrl String?
-  breakingEnabled Boolean @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  logoUrl         String?
+  contactEmail    String?
+  contactPhone    String?
+  address         String?
+  websiteUrl      String?
+  facebookUrl     String?
+  instagramUrl    String?
+  youtubeUrl      String?
+  breakingEnabled Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
