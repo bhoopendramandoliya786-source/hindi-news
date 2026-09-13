@@ -9,34 +9,169 @@ export type NormalizedNews = {
   categorySlug: string;
 };
 
-type FeedConfig = { feeds: Array<{ url: string; source: string }> };
-const googleNews = (query: string) => `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=hi&gl=IN&ceid=IN:hi`;
-const FEEDS: Record<string, FeedConfig> = {
-  india: { feeds: [{ url: "https://feeds.feedburner.com/ndtvnews-india-news", source: "NDTV" }, { url: "https://feeds.feedburner.com/ndtvkhabar-latest", source: "NDTV हिंदी" }] },
-  sports: { feeds: [{ url: "https://feeds.feedburner.com/ndtvsports-latest", source: "NDTV Sports" }, { url: "https://feeds.feedburner.com/ndtvkhabar-sports", source: "NDTV हिंदी" }] },
-  entertainment: { feeds: [{ url: "https://feeds.feedburner.com/ndtvmovies-latest", source: "NDTV Movies" }, { url: "https://feeds.feedburner.com/ndtvkhabar-entertainment", source: "NDTV हिंदी" }] },
-  business: { feeds: [{ url: "https://feeds.feedburner.com/ndtvprofit-latest", source: "NDTV Profit" }, { url: "https://feeds.feedburner.com/ndtvkhabar-business", source: "NDTV हिंदी" }] },
-  technology: { feeds: [{ url: "https://feeds.feedburner.com/gadgets360-latest", source: "Gadgets 360" }, { url: "https://feeds.feedburner.com/ndtvkhabar-gadgets", source: "NDTV हिंदी" }] },
-  world: { feeds: [{ url: "https://feeds.feedburner.com/ndtvnews-world-news", source: "NDTV" }, { url: "https://feeds.feedburner.com/ndtvkhabar-world", source: "NDTV हिंदी" }] },
-  rajasthan: { feeds: [{ url: "https://www.amarujala.com/rss/rajasthan.xml", source: "अमर उजाला" }, { url: "https://feed.bhaskar.com/rss/1154", source: "दैनिक भास्कर" }] },
-  jobs: { feeds: [{ url: googleNews("सरकारी नौकरी भर्ती India RPSC RSSB SSC UPSC Railway"), source: "Google News" }, { url: googleNews("सरकारी नौकरी Rajasthan भर्ती RPSC RSSB"), source: "Google News" }] },
-  exams: { feeds: [{ url: googleNews("परीक्षा notification admit card exam India RPSC RSSB SSC UPSC"), source: "Google News" }, { url: googleNews("Rajasthan exam RPSC RSSB परीक्षा"), source: "Google News" }] },
-  results: { feeds: [{ url: googleNews("result 2026 India RPSC RSSB SSC UPSC"), source: "Google News" }, { url: googleNews("Rajasthan result 2026 परीक्षा परिणाम"), source: "Google News" }] },
-  "admit-card": { feeds: [{ url: googleNews("admit card प्रवेश पत्र 2026 India RPSC RSSB SSC UPSC"), source: "Google News" }, { url: googleNews("Rajasthan admit card 2026"), source: "Google News" }] },
-  "current-affairs": { feeds: [{ url: googleNews("current affairs today India हिंदी"), source: "Google News" }, { url: googleNews("आज का करंट अफेयर्स हिंदी"), source: "Google News" }] },
+type OfficialSource = {
+  url: string;
+  source: string;
+  defaultCategory: string;
+  keywords: string[];
 };
-function decodeEntities(value: string): string { return value.replace(/&nbsp;/gi, " ").replace(/&quot;/gi, '"').replace(/&amp;/gi, "&").replace(/&lt;/gi, "<").replace(/&gt;/gi, ">").replace(/&#39;|&apos;/gi, "'").replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code))).replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCharCode(parseInt(code, 16))); }
-function cleanHtml(raw: string): string { if (!raw) return ""; return decodeEntities(raw).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").replace(/<script[\s\S]*?<\/script>/gi, " ").replace(/<style[\s\S]*?<\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/https?:\/\/\S+/gi, "").replace(/\s+/g, " ").trim(); }
-function extractTag(xml: string, tag: string): string { const match = xml.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}>`, "i")); return match ? cleanHtml(match[1]) : ""; }
-function extractFirstTag(xml: string, tags: string[]): string { for (const tag of tags) { const value = extractTag(xml, tag); if (value) return value; } return ""; }
-function extractLink(xml: string): string { const linkMatch = xml.match(/<link(?:\s[^>]*)?>([\s\S]*?)<\/link>/i); if (linkMatch?.[1]) return cleanHtml(linkMatch[1]); const hrefMatch = xml.match(/<link[^>]+href=["']([^"']+)["'][^>]*\/?\s*>/i); return hrefMatch?.[1] || ""; }
-function extractImageUrl(xml: string): string | null { const patterns = [/<media:content[^>]*url=["']([^"']+)["']/i, /<media:thumbnail[^>]*url=["']([^"']+)["']/i, /<enclosure[^>]*url=["']([^"']+)["']/i, /<img[^>]*src=["']([^"']+)["']/i]; for (const pattern of patterns) { const match = xml.match(pattern); if (match?.[1]?.startsWith("http")) return match[1]; } return null; }
-function makeSummary(title: string, rawDescription: string): string { let text = cleanHtml(rawDescription); if (!text || text.length < 25 || text.toLowerCase() === title.toLowerCase()) return title; if (text.length > 600) text = `${text.slice(0, 597).replace(/\s+\S*$/, "")}...`; return text || title; }
-function stableExternalId(link: string, title: string, publishedAt: string, categorySlug: string): string { return (link || `${categorySlug}|${title}|${publishedAt}`).trim().toLowerCase().slice(0, 900); }
-function parseFeed(xmlText: string, config: { source: string }, categorySlug: string): NormalizedNews[] {
-  const itemMatches = xmlText.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) || []; const atomMatches = xmlText.match(/<entry(?:\s[^>]*)?>[\s\S]*?<\/entry>/gi) || []; const blocks = itemMatches.length ? itemMatches : atomMatches;
-  return blocks.flatMap((itemXml) => { const title = extractTag(itemXml, "title"); if (!title) return []; const link = extractLink(itemXml); const pubDateStr = extractFirstTag(itemXml, ["pubDate", "dc:date", "published", "updated"]); const parsedDate = pubDateStr ? new Date(pubDateStr) : new Date(); const publishedAt = Number.isNaN(parsedDate.getTime()) ? new Date() : parsedDate; const rawDescription = extractFirstTag(itemXml, ["content:encoded", "description", "summary"]); return [{ title, description: makeSummary(title, rawDescription), imageUrl: extractImageUrl(itemXml), sourceName: extractTag(itemXml, "source") || config.source, sourceUrl: link, publishedAt, externalId: stableExternalId(link, title, pubDateStr, categorySlug), categorySlug }]; });
+
+const SOURCES: OfficialSource[] = [
+  {
+    url: "https://rpsc.rajasthan.gov.in/",
+    source: "RPSC",
+    defaultCategory: "jobs",
+    keywords: ["recruitment", "result", "admit", "exam", "answer", "syllabus", "press note", "interview", "advt", "भर्ती", "परिणाम", "परीक्षा", "प्रवेश"],
+  },
+  {
+    url: "https://www.recruitment.rajasthan.gov.in/",
+    source: "Rajasthan Recruitment Portal",
+    defaultCategory: "jobs",
+    keywords: ["recruitment", "apply", "admit", "result", "exam", "answer", "vacancy", "joint recruitment", "भर्ती", "आवेदन", "प्रवेश", "परिणाम"],
+  },
+  {
+    url: "https://sje.rajasthan.gov.in/Scholarship_Portal.aspx",
+    source: "Rajasthan Social Justice & Empowerment Department",
+    defaultCategory: "scholarship",
+    keywords: ["scholarship", "student", "date extension", "scheme", "faq", "blacklist", "biometric", "छात्रवृत्ति", "छात्र", "योजना", "तिथि"],
+  },
+  {
+    url: "https://rajeduboard.rajasthan.gov.in/main.asp",
+    source: "RBSE",
+    defaultCategory: "results",
+    keywords: ["result", "exam", "scholarship", "certificate", "timetable", "board", "परिणाम", "परीक्षा", "छात्रवृत्ति", "प्रमाण-पत्र", "समय-सारणी"],
+  },
+  {
+    url: "https://rajeduboard.rajasthan.gov.in/RESULT2026/Result2026.htm",
+    source: "RBSE",
+    defaultCategory: "results",
+    keywords: ["result", "secondary", "senior secondary", "vocational", "परिणाम", "रिजल्ट"],
+  },
+  {
+    url: "https://rajshaladarpan.rajasthan.gov.in/SD2/VPMS/AdmitCard.aspx",
+    source: "Shala Darpan Rajasthan",
+    defaultCategory: "admit-card",
+    keywords: ["admit card", "scholarship", "प्रवेश पत्र", "छात्रवृत्ति"],
+  },
+];
+
+function cleanHtml(raw: string): string {
+  return raw
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<!--[\s\S]*?-->/g, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
+    .replace(/\s+/g, " ")
+    .trim();
 }
-async function fetchFeed(url: string, source: string, categorySlug: string): Promise<NormalizedNews[]> { let lastError: unknown = null; for (let attempt = 0; attempt < 2; attempt++) { const controller = new AbortController(); const timeoutId = setTimeout(() => controller.abort(), 8000); try { const res = await fetch(url, { cache: "no-store", signal: controller.signal, headers: { "User-Agent": "Mozilla/5.0 (compatible; HindiNewsBot/1.0; +https://hindi-news-omega.vercel.app)", Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8" } }); if (!res.ok) throw new Error(`HTTP ${res.status}`); const xmlText = await res.text(); if (!xmlText.includes("<item") && !xmlText.includes("<entry")) throw new Error("Invalid RSS/Atom response"); return parseFeed(xmlText, { source }, categorySlug); } catch (error) { lastError = error; if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 500)); } finally { clearTimeout(timeoutId); } } throw lastError instanceof Error ? lastError : new Error("RSS fetch failed"); }
-export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> { const config = FEEDS[categorySlug]; if (!config) return []; const results = await Promise.allSettled(config.feeds.map((feed) => fetchFeed(feed.url, feed.source, categorySlug))); const merged: NormalizedNews[] = []; const seen = new Set<string>(); for (const result of results) if (result.status === "fulfilled") for (const article of result.value) { const key = article.sourceUrl || article.title.trim().toLowerCase(); if (seen.has(key)) continue; seen.add(key); merged.push(article); } merged.sort((a, b) => (b.publishedAt?.getTime() || 0) - (a.publishedAt?.getTime() || 0)); return merged.slice(0, 12); }
-export async function fetchAllHindiNews(): Promise<NormalizedNews[]> { const results = await Promise.allSettled(Object.keys(FEEDS).map((cat) => fetchCategoryNews(cat))); return results.flatMap((result) => result.status === "fulfilled" ? result.value : []); }
+
+function absoluteUrl(base: string, href: string) {
+  try { return new URL(href, base).toString(); } catch { return ""; }
+}
+
+function classify(text: string, fallback: string) {
+  const value = text.toLowerCase();
+  if (/admit|प्रवेश पत्र|प्रवेशपत्र/.test(value)) return "admit-card";
+  if (/answer key|model answer|आंसर|उत्तर कुंजी|objection/.test(value)) return "answer-key";
+  if (/result|परिणाम|रिजल्ट|cutoff|cut off/.test(value)) return "results";
+  if (/scholarship|छात्रवृत्ति|scooty|स्कूटी/.test(value)) return "scholarship";
+  if (/admission|प्रवेश|counselling|counseling/.test(value)) return "admission";
+  if (/document|certificate|प्रमाण|दस्तावेज/.test(value)) return "documents";
+  if (/scheme|योजना|incentive|वजीफा/.test(value)) return "schemes";
+  if (/exam|परीक्षा|syllabus|scheme and syllabus|calendar/.test(value)) return "exams";
+  if (/job|recruit|vacancy|भर्ती|आवेदन|apply|advertisement|advt|selection|jen|teacher|police/.test(value)) return "jobs";
+  return fallback;
+}
+
+function externalId(url: string, title: string) {
+  return (url || `${title}`)
+    .trim()
+    .toLowerCase()
+    .slice(0, 900);
+}
+
+function extractOfficialItems(html: string, source: OfficialSource): NormalizedNews[] {
+  const anchors = [...html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+  const seen = new Set<string>();
+  const items: NormalizedNews[] = [];
+
+  for (const match of anchors) {
+    const href = absoluteUrl(source.url, match[1]);
+    const title = cleanHtml(match[2]);
+    if (!href || !title || title.length < 10 || title.length > 220) continue;
+    if (/javascript:|mailto:|#/.test(href)) continue;
+    const haystack = `${title} ${href}`.toLowerCase();
+    if (!source.keywords.some((keyword) => haystack.includes(keyword.toLowerCase()))) continue;
+    if (seen.has(href)) continue;
+    seen.add(href);
+
+    const categorySlug = classify(title, source.defaultCategory);
+    items.push({
+      title,
+      description: `यह छात्र उपयोगी अपडेट ${source.source} के आधिकारिक स्रोत पर उपलब्ध जानकारी से लिया गया है। जरूरी तारीख, पात्रता, आवेदन या परिणाम जैसी जानकारी के लिए मूल आधिकारिक पेज देखें।`,
+      imageUrl: null,
+      sourceName: source.source,
+      sourceUrl: href,
+      publishedAt: new Date(),
+      externalId: externalId(href, title),
+      categorySlug,
+    });
+  }
+
+  if (!items.length) {
+    items.push({
+      title: `${source.source}: आधिकारिक छात्र अपडेट`,
+      description: `इस स्रोत पर उपलब्ध छात्र, परीक्षा, भर्ती, रिजल्ट या योजना से जुड़ी आधिकारिक जानकारी देखें।`,
+      imageUrl: null,
+      sourceName: source.source,
+      sourceUrl: source.url,
+      publishedAt: new Date(),
+      externalId: externalId(source.url, source.source),
+      categorySlug: source.defaultCategory,
+    });
+  }
+
+  return items.slice(0, 25);
+}
+
+async function fetchSource(source: OfficialSource) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10000);
+  try {
+    const response = await fetch(source.url, {
+      cache: "no-store",
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (compatible; StudentInfoBot/1.0; +https://hindi-news-omega.vercel.app)",
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    return extractOfficialItems(await response.text(), source);
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> {
+  const sources = SOURCES.filter((source) => source.defaultCategory === categorySlug);
+  const results = await Promise.allSettled(sources.map(fetchSource));
+  return results.flatMap((result) => result.status === "fulfilled" ? result.value : []);
+}
+
+export async function fetchAllHindiNews(): Promise<NormalizedNews[]> {
+  const results = await Promise.allSettled(SOURCES.map(fetchSource));
+  const seen = new Set<string>();
+  return results
+    .flatMap((result) => result.status === "fulfilled" ? result.value : [])
+    .filter((item) => {
+      if (seen.has(item.externalId)) return false;
+      seen.add(item.externalId);
+      return true;
+    });
+}
