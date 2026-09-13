@@ -162,26 +162,38 @@ function parseFeed(xmlText: string, config: { source: string }, categorySlug: st
 }
 
 async function fetchFeed(url: string, source: string, categorySlug: string): Promise<NormalizedNews[]> {
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(url, {
-      cache: "no-store",
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; HindiNewsBot/1.0; +https://hindi-news-omega.vercel.app)",
-        Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
-      },
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const xmlText = await res.text();
-    if (!xmlText.includes("<item") && !xmlText.includes("<entry")) {
-      throw new Error("Invalid RSS/Atom response");
+  let lastError: unknown = null;
+
+  // Retry transient RSS/network failures once. The category-level fallback feed
+  // still runs independently, so one broken provider cannot stop the sync.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const res = await fetch(url, {
+        cache: "no-store",
+        signal: controller.signal,
+        headers: {
+          "User-Agent": "Mozilla/5.0 (compatible; HindiNewsBot/1.0; +https://hindi-news-omega.vercel.app)",
+          Accept: "application/rss+xml, application/atom+xml, application/xml, text/xml;q=0.9, */*;q=0.8",
+        },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const xmlText = await res.text();
+      if (!xmlText.includes("<item") && !xmlText.includes("<entry")) {
+        throw new Error("Invalid RSS/Atom response");
+      }
+      return parseFeed(xmlText, { source }, categorySlug);
+    } catch (error) {
+      lastError = error;
+      if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 500));
+    } finally {
+      clearTimeout(timeoutId);
     }
-    return parseFeed(xmlText, { source }, categorySlug);
-  } finally {
-    clearTimeout(timeoutId);
   }
+
+  throw lastError instanceof Error ? lastError : new Error("RSS fetch failed");
 }
 
 export async function fetchCategoryNews(categorySlug: string): Promise<NormalizedNews[]> {
