@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { db } from "@/lib/db";
 import AdSlot from "@/components/AdSense";
+import { AdsterraBanner, AdsterraNative } from "@/components/AdsterraAds";
 
 export const revalidate = 30;
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
@@ -90,6 +91,8 @@ export default async function HomePage() {
           <section className="mb-10" aria-labelledby="featured-heading"><div className="mb-5 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 id="featured-heading" className="text-xl font-black text-gray-950">⭐ प्रमुख खबरें</h2></div><div className="grid gap-5 md:grid-cols-2">{featured.map((item) => <NewsCard key={item.id} item={item} featured />)}</div></section>
         )}
 
+        <AdsterraNative />
+        <AdsterraBanner />
         <AdSlot className="my-5" />
 
         <section className="mb-10" aria-labelledby="latest-heading">
