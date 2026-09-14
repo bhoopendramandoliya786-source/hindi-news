@@ -5,8 +5,9 @@ export type StudentEntity = {
   count: number;
 };
 
-// Words that describe the stage/action, not the actual recruitment, exam,
-// result, scholarship, admission or service being tracked.
+// Stage/action words are removed so the same recruitment/exam/scholarship
+// remains one master entity across notification -> admit card -> answer key -> result.
+// Keep year/session because 2025 and 2026 (or 2025-26 and 2026-27) are different entities.
 const REMOVE_WORDS = new Set([
   "latest", "new", "out", "released", "release", "notification", "notice",
   "online", "form", "apply", "application", "result", "results", "admit",
@@ -14,17 +15,21 @@ const REMOVE_WORDS = new Set([
   "recruitment", "recruit", "bharti", "vacancy", "vacancies", "final", "provisional",
   "official", "check", "download", "downloadable", "pdf", "direct", "joint",
   "selection", "selected", "shortlist", "merit", "cutoff", "cut", "off",
-  "update", "updates", "notification", "advertisement", "advt"
+  "update", "updates", "advertisement", "advt",
+  // Common Hindi stage words.
+  "भर्ती", "भर्तियां", "भर्तियाँ", "परीक्षा", "परिणाम", "रिजल्ट", "एडमिट", "कार्ड",
+  "प्रवेश", "पत्र", "उत्तर", "कुंजी", "आंसर", "आवेदन", "फॉर्म", "अधिसूचना", "विज्ञप्ति",
+  "पाठ्यक्रम", "तारीख", "तिथियां", "तिथियाँ", "समय-सारणी", "अनुसूची", "चयन", "चयनित",
+  "मेरिट", "कटऑफ", "कट-ऑफ", "आपत्ति", "आपत्तियां", "आपत्तियाँ", "स्क्रूटिनी", "परिणाम",
+  "सूची", "सूचना", "जारी", "जारीकरण", "डाउनलोड", "ऑनलाइन", "नोटिफिकेशन"
 ]);
 
-const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|result|final\s+result|exam\s+date|exam\s+schedule|syllabus|recruitment|notification|advertisement|advt)\s*[:\-–—|]*/i;
+const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|result|final\s+result|exam\s+date|exam\s+schedule|syllabus|recruitment|notification|advertisement|advt|भर्ती|परीक्षा|परिणाम|रिजल्ट|एडमिट\s*कार्ड|उत्तर\s*कुंजी|आंसर\s*की|आवेदन\s*फॉर्म|अधिसूचना|विज्ञप्ति)\s*[:\-–—|]*/i;
 
 function cleanTitle(title: string) {
   return title
     .replace(ACTION_PREFIX, "")
     .replace(/[|:–—]+/g, " ")
-    // Keep years/session in the identity. This prevents SSC CGL 2025 and
-    // SSC CGL 2026, or Scholarship 2025-26 and 2026-27, from being merged.
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -40,8 +45,6 @@ export function getStudentEntityName(title: string) {
     if (kept.length >= 9) break;
   }
 
-  // Prefer an identity that contains the year/session when the title has one.
-  // The final fallback still works for Hindi-only titles.
   const identity = (kept.length ? kept.join(" ") : clean || title).trim();
   return identity.replace(/\s+/g, " ");
 }
@@ -53,8 +56,8 @@ export function getStudentEntityKey(title: string, _categorySlug = "student-upda
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
-  // IMPORTANT: do not include categorySlug here. A recruitment is one entity
-  // across jobs → exam → admit card → answer key → result → selection.
+  // Category is deliberately excluded: one recruitment/exam should remain one
+  // master page across jobs -> exam -> admit card -> answer key -> result.
   if (ascii) return `work-${ascii}`;
   return `work-${encodeURIComponent(name).replace(/%/g, "-")}`.slice(0, 180);
 }
