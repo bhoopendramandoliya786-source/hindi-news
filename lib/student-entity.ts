@@ -11,11 +11,13 @@ const REMOVE_WORDS = new Set([
   "latest", "new", "out", "released", "release", "notification", "notice",
   "online", "form", "apply", "application", "result", "results", "admit",
   "card", "answer", "key", "syllabus", "exam", "date", "dates", "schedule",
-  "recruitment", "bharti", "vacancy", "vacancies", "final", "provisional",
-  "official", "check", "download", "downloadable", "pdf"
+  "recruitment", "recruit", "bharti", "vacancy", "vacancies", "final", "provisional",
+  "official", "check", "download", "downloadable", "pdf", "direct", "joint",
+  "selection", "selected", "shortlist", "merit", "cutoff", "cut", "off",
+  "update", "updates", "notification", "advertisement", "advt"
 ]);
 
-const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|result|final\s+result|exam\s+date|exam\s+schedule|syllabus|recruitment|notification)\s*[:\-–—|]*/i;
+const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|result|final\s+result|exam\s+date|exam\s+schedule|syllabus|recruitment|notification|advertisement|advt)\s*[:\-–—|]*/i;
 
 function cleanTitle(title: string) {
   return title
@@ -53,8 +55,6 @@ export function getStudentEntityKey(title: string, _categorySlug = "student-upda
 
   // IMPORTANT: do not include categorySlug here. A recruitment is one entity
   // across jobs → exam → admit card → answer key → result → selection.
-  // Keeping category in the key used to split one recruitment into multiple
-  // master pages and prevented the lifecycle tracker from joining its stages.
   if (ascii) return `work-${ascii}`;
   return `work-${encodeURIComponent(name).replace(/%/g, "-")}`.slice(0, 180);
 }
