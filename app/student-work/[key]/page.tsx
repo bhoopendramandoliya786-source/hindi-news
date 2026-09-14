@@ -47,14 +47,14 @@ export default async function StudentWorkPage({ params }: Props) {
   const latest = matches.slice(0, 30);
 
   const lifecycle = LIFECYCLE.map((stage, index) => {
-    const items = matches.filter(item => stage.slugs.includes(item.categorySlug as (typeof stage.slugs)[number])).sort((a, b) => dateValue(b.publishedAt || b.createdAt) - dateValue(a.publishedAt || a.createdAt));
+    const items = matches.filter(item => stage.slugs.some(slug => slug === item.categorySlug)).sort((a, b) => dateValue(b.publishedAt || b.createdAt) - dateValue(a.publishedAt || a.createdAt));
     return { ...stage, index: index + 1, items, latest: items[0] || null };
   });
 
   const activeStages = lifecycle.filter(stage => stage.latest);
   const nextStage = activeStages[activeStages.length - 1] || null;
   const nextItem = nextStage?.latest || first;
-  const nextAction = nextStage?.label || context.next || "नया official update देखें";
+  const nextAction = nextStage?.label || context.actionLabel || "नया official update देखें";
 
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [
     { "@type": "ListItem", position: 1, name: "होम", item: SITE_URL },
