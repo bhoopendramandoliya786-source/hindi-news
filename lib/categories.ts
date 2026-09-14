@@ -9,6 +9,7 @@ export const categories = [
   { nameHi: "डॉक्यूमेंट", nameEn: "Documents", slug: "documents" },
   { nameHi: "सरकारी योजनाएं", nameEn: "Government Schemes", slug: "schemes" },
   { nameHi: "नागरिक सेवाएं", nameEn: "Citizen Services", slug: "citizen-services" },
+  { nameHi: "शिक्षा", nameEn: "Education", slug: "education" },
   { nameHi: "करंट अफेयर्स", nameEn: "Current Affairs", slug: "current-affairs" },
   { nameHi: "राजस्थान छात्र अपडेट", nameEn: "Rajasthan Student Updates", slug: "student-updates" },
 ] as const;
