@@ -44,14 +44,19 @@ export function getStudentEntityName(title: string) {
   return identity.replace(/\s+/g, " ");
 }
 
-export function getStudentEntityKey(title: string, categorySlug = "student-updates") {
+export function getStudentEntityKey(title: string, _categorySlug = "student-updates") {
   const name = getStudentEntityName(title);
   const ascii = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
-  if (ascii) return `${categorySlug}-${ascii}`;
-  return `${categorySlug}-${encodeURIComponent(name).replace(/%/g, "-")}`.slice(0, 180);
+
+  // IMPORTANT: do not include categorySlug here. A recruitment is one entity
+  // across jobs → exam → admit card → answer key → result → selection.
+  // Keeping category in the key used to split one recruitment into multiple
+  // master pages and prevented the lifecycle tracker from joining its stages.
+  if (ascii) return `work-${ascii}`;
+  return `work-${encodeURIComponent(name).replace(/%/g, "-")}`.slice(0, 180);
 }
 
 export function buildStudentEntities(items: { title: string }[], categorySlug: string): StudentEntity[] {
