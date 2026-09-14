@@ -40,6 +40,31 @@ function titleSimilarity(a: string, b: string) {
   return common / Math.max(left.size, right.size);
 }
 
+function addWhatIsThisContext(description: string | null, title: string, categorySlug: string) {
+  const clean = (description || "").trim();
+  const labels: Record<string, string> = {
+    results: "यह किसका रिजल्ट है?",
+    schemes: "यह किस योजना की जानकारी है?",
+    scholarship: "यह किस छात्रवृत्ति की जानकारी है?",
+    jobs: "यह किस भर्ती की जानकारी है?",
+    exams: "यह किस परीक्षा की जानकारी है?",
+    "admit-card": "यह किस परीक्षा/भर्ती का एडमिट कार्ड है?",
+    "answer-key": "यह किस परीक्षा की आंसर की है?",
+    admission: "यह किस admission/course की जानकारी है?",
+    documents: "यह किस काम के document से जुड़ी जानकारी है?",
+    education: "यह किस शिक्षा/संस्थान से जुड़ी जानकारी है?",
+    "citizen-services": "यह किस नागरिक सेवा से जुड़ी जानकारी है?",
+    "current-affairs": "यह किस student-useful current update की जानकारी है?",
+    "student-updates": "यह किस student update की जानकारी है?",
+  };
+  const label = labels[categorySlug];
+  if (!label) return clean;
+  const context = `${label} ${title.trim()}`;
+  if (!clean) return context;
+  if (clean.includes(label)) return clean;
+  return `${context}\n\n${clean}`;
+}
+
 export async function saveIndiaNews() {
   const articles = await fetchAllHindiNews();
   let saved = 0, skipped = 0, updated = 0;
@@ -74,10 +99,11 @@ export async function saveIndiaNews() {
 
       if (existing) {
         const currentNormalized = normalizeTitle(existing.title || "");
-        const shouldRefresh = (!existing.description && !!article.description) || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
+        const contextualDescription = addWhatIsThisContext(existing.description || article.description, article.title, article.categorySlug);
+        const shouldRefresh = contextualDescription !== (existing.description || "") || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
         if (shouldRefresh) {
           const processed = processNews(article, existing.id);
-          await db.news.update({ where: { id: existing.id }, data: { description: processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
+          await db.news.update({ where: { id: existing.id }, data: { description: contextualDescription || processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
           updated++;
         } else skipped++;
         continue;
@@ -86,10 +112,11 @@ export async function saveIndiaNews() {
       if (recentTitles.some((item) => titleSimilarity(article.title, item.title) >= 0.88)) { skipped++; continue; }
 
       const processed = processNews(article, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+      const contextualDescription = addWhatIsThisContext(processed.description, processed.title, article.categorySlug);
       try {
-        const created = await db.news.create({ data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId, publishedAt: processed.publishedAt || new Date() } });
-        recentTitles.unshift({ id: created.id, title: processed.title, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
-        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
+        const created = await db.news.create({ data: { title: processed.title, slug: processed.slug, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId, publishedAt: processed.publishedAt || new Date() } });
+        recentTitles.unshift({ id: created.id, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
+        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
         if (recentTitles.length > 1000) recentTitles.pop();
         saved++;
       } catch (error: any) {
