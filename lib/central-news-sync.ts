@@ -37,7 +37,7 @@ const SOURCES: Source[] = [
 
 const CATEGORY_MAP: Record<string, string> = {
   jobs: "सरकारी नौकरी", exams: "परीक्षा", "admit-card": "एडमिट कार्ड", "answer-key": "आंसर की", results: "रिजल्ट",
-  scholarship: "स्कॉलरशिप", admission: "एडमिशन", documents: "डॉक्यूमेंट", schemes: "सरकारी योजनाएं", education: "शिक्षा", "student-updates": "छात्र अपडेट"
+  scholarship: "स्कॉलरशिप", admission: "एडमिशन", documents: "डॉक्यूमेंट", schemes: "सरकारी योजनाएं", education: "शिक्षा", "student-updates": "छात्र अपडेट", "citizen-services": "नागरिक सेवाएं"
 };
 
 function clean(value: string) {
@@ -75,9 +75,10 @@ async function fetchSource(source: Source) {
   for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
     const title = clean(match[2]);
     const url = absolute(source.url, match[1]);
-    if (!title || title.length < 12 || title.length > 220 || !url || /javascript:|mailto:|#/.test(url)) continue;
+    if (!title || title.length < 16 || title.length > 220 || !url || /javascript:|mailto:|#/.test(url)) continue;
     const hay = `${title} ${url}`.toLowerCase();
     if (!source.keywords.some(k => hay.includes(k))) continue;
+    if (/^(home|contact|login|logout|sitemap|privacy|terms|feedback|help|faq)$/i.test(title)) continue;
     if (seen.has(url)) continue;
     seen.add(url);
     items.push({ title, url, categorySlug: classify(title, source.fallback), source: source.source });
@@ -92,6 +93,9 @@ export async function syncCentralOfficialNews() {
   }
   const results = await Promise.allSettled(SOURCES.map(fetchSource));
   const articles = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
+  const successfulSources = results.filter(r => r.status === "fulfilled").length;
+  if (successfulSources === 0) throw new Error("All national official sources failed during sync");
+
   let saved = 0, updated = 0, skipped = 0;
 
   for (const article of articles) {
@@ -130,5 +134,5 @@ export async function syncCentralOfficialNews() {
       if (error?.code === "P2002") skipped++; else throw error;
     }
   }
-  return { sources: SOURCES.length, fetched: articles.length, saved, updated, skipped };
+  return { sources: SOURCES.length, successfulSources, fetched: articles.length, saved, updated, skipped };
 }
