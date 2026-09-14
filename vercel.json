@@ -3,11 +3,7 @@
   "crons": [
     {
       "path": "/api/cron/news",
-      "schedule": "*/15 * * * *"
-    },
-    {
-      "path": "/api/cron/india",
-      "schedule": "*/15 * * * *"
+      "schedule": "15 0 * * *"
     }
   ]
 }
