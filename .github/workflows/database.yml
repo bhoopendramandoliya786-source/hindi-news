@@ -5,7 +5,8 @@ on:
   push:
     branches: [main]
   schedule:
-    - cron: "*/15 * * * *"
+    # Avoid the top of the hour, when GitHub reports heavier schedule load.
+    - cron: "7,22,37,52 * * * *"
 
 concurrency:
   group: news-database
@@ -31,7 +32,7 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
-      - name: Fetch and publish fresh news
+      - name: Fetch and publish fresh official student updates
         run: npm run fetch:news
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
