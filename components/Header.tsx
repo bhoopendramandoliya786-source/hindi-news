@@ -17,6 +17,7 @@ const navigation = [
   { name: "नागरिक सेवाएं", href: "/category/citizen-services" },
   { name: "सरकारी योजनाएं", href: "/category/schemes" },
   { name: "करंट अफेयर्स", href: "/category/current-affairs" },
+  { name: "Tracker", href: "/track" },
 ];
 
 export default function Header() {
@@ -32,6 +33,7 @@ export default function Header() {
           </form>
           <div className="hidden items-center gap-2 sm:flex">
             <Link href="/search" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">🔎</Link>
+            <Link href="/track" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">Tracker</Link>
             <Link href="/category/jobs" className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-red-700">नौकरी</Link>
           </div>
           <button onClick={() => setMenuOpen(!menuOpen)} className="rounded-md border border-white px-3 py-2 text-xl sm:hidden" aria-label="Menu">☰</button>
