@@ -18,18 +18,21 @@ function authorized(request: Request) {
   return timingSafeEqual(provided, expected);
 }
 
+function revalidateStudentPages() {
+  revalidatePath("/");
+  revalidatePath("/latest");
+  revalidatePath("/search");
+  revalidatePath("/category/[slug]", "page");
+  revalidatePath("/student-work/[slug]", "page");
+  revalidatePath("/sitemap.xml");
+  revalidatePath("/news-sitemap.xml");
+}
+
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ success: false, message: "Unauthorized." }, { status: 401 });
   try {
     const result = await syncCentralOfficialNews();
-    if (result.saved > 0) {
-      revalidatePath("/");
-      revalidatePath("/latest");
-      revalidatePath("/category/[slug]", "page");
-      revalidatePath("/student-work/[slug]", "page");
-      revalidatePath("/sitemap.xml");
-      revalidatePath("/news-sitemap.xml");
-    }
+    if (result.saved > 0 || result.updated > 0) revalidateStudentPages();
     return NextResponse.json({ success: true, message: "Central official update sync completed.", result, syncedAt: new Date().toISOString() });
   } catch (error) {
     console.error("Central official sync failed:", error);
