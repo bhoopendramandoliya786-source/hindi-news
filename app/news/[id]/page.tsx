@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { cache } from "react";
 import AdSlot from "@/components/AdSense";
+import { AdsterraNative, AdsterraBanner } from "@/components/AdsterraAds";
 
 interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
@@ -64,16 +65,15 @@ const getNews = cache(async (idOrSlug: string) => {
     const byId = await db.news.findFirst({ where: { status: "PUBLISHED", id: raw }, include: { category: true } });
     if (byId) return byId;
     return await db.news.findFirst({ where: { status: "PUBLISHED", slug: raw }, include: { category: true } });
-  } catch (error) { console.error("[student-detail] database read failed", error); return null; }
+  } catch { return null; }
 });
 
-const getRelatedNews = cache(async (categoryId: string, excludeId: string) => {
-  try {
-    return await db.news.findMany({ where: { status: "PUBLISHED", categoryId, id: { not: excludeId } }, orderBy: [{ publishedAt: "desc" }, { viewCount: "desc" }], take: 5, select: { id: true, title: true, imageUrl: true, publishedAt: true, createdAt: true } });
-  } catch (error) { console.error("[student-detail] related failed", error); return []; }
-});
+async function getRelatedNews(categoryId: string | null, excludeId: string) {
+  if (!categoryId) return [];
+  try { return await db.news.findMany({ where: { status: "PUBLISHED", categoryId, id: { not: excludeId } }, orderBy: { publishedAt: "desc" }, take: 6, select: { id: true, slug: true, title: true, publishedAt: true, createdAt: true } }); } catch { return []; }
+}
 
-function safeIso(value: Date | null | undefined) { try { return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : undefined; } catch { return undefined; } }
+function safeIso(value: Date | null | undefined) { return value ? new Date(value).toISOString() : undefined; }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
@@ -122,7 +122,9 @@ export default async function NewsDetailPage({ params }: Props) {
 
             <AdSlot className="my-5" />
 
-            <section className="mt-6" aria-label="सत्यापित जानकारी"><h2 className="mb-3 text-xl font-black text-gray-950">सत्यापित जानकारी</h2><div className="article-body">{renderFormattedContent(bodyText)}</div></section>
+            <section className="mt-6" aria-label="सत्यापित जानकारी"><h2 className="mb-3 text-xl font-black text-gray-950">सत्यापित जानकारी और पूरा तरीका</h2><div className="article-body">{renderFormattedContent(bodyText)}</div></section>
+
+            <AdsterraNative />
 
             <section className="mt-7 border-t pt-6"><h2 className="text-xl font-black text-gray-950">इस काम से जुड़े अगले चरण</h2><div className="mt-4 grid gap-3 sm:grid-cols-3">{help.links.map((link) => <Link key={link.slug} href={`/category/${link.slug}`} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm font-black text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-700">{link.label} →</Link>)}</div></section>
 
@@ -133,6 +135,7 @@ export default async function NewsDetailPage({ params }: Props) {
           </article>
 
           <aside className="space-y-6">
+            <AdsterraBanner />
             <AdSlot className="my-0" />
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><h2 className="mb-4 border-b-2 border-red-600 pb-2 font-black">📌 छात्र के काम के अगले पेज</h2><div className="grid gap-2">{[{label:"सरकारी नौकरी",slug:"jobs"},{label:"परीक्षा",slug:"exams"},{label:"एडमिट कार्ड",slug:"admit-card"},{label:"आंसर की",slug:"answer-key"},{label:"रिजल्ट",slug:"results"},{label:"स्कॉलरशिप",slug:"scholarship"},{label:"एडमिशन",slug:"admission"},{label:"डॉक्यूमेंट",slug:"documents"},{label:"सरकारी योजनाएं",slug:"schemes"}].map((x) => <Link key={x.slug} href={`/category/${x.slug}`} className="rounded-lg px-3 py-2 text-sm font-bold text-gray-700 hover:bg-red-50 hover:text-red-700">{x.label} →</Link>)}</div></div>
             <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">🎓 Student Update</h2><p className="mt-2 text-xs leading-6 text-gray-300">यहां खबर को सिर्फ पढ़ाया नहीं जाता—सरकारी काम की अगली प्रक्रिया समझाई जाती है।</p><Link href="/" className="mt-4 inline-block rounded-lg bg-white px-4 py-2 text-xs font-black text-gray-950">छात्र होम खोलें →</Link></div>
