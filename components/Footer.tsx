@@ -9,6 +9,8 @@ const tasks = [
   ["एडमिशन", "/category/admission"],
   ["डॉक्यूमेंट", "/category/documents"],
   ["सरकारी योजनाएं", "/category/schemes"],
+  ["Education", "/category/education"],
+  ["Citizen Services", "/category/citizen-services"],
 ];
 
 export default function Footer() {
@@ -30,6 +32,7 @@ export default function Footer() {
           <div className="flex flex-col gap-2 text-sm">
             <Link href="/" className="hover:text-white">Student Home</Link>
             <Link href="/search" className="hover:text-white">अपना काम खोजें</Link>
+            <Link href="/track" className="hover:text-white">भर्ती / परीक्षा Tracker</Link>
             <Link href="/about" className="hover:text-white">हमारे बारे में</Link>
             <Link href="/contact" className="hover:text-white">संपर्क करें</Link>
           </div>
