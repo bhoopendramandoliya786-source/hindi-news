@@ -9,8 +9,21 @@ import AdSlot from "@/components/AdSense";
 interface Props { params: Promise<{ id: string }> }
 const WHATSAPP_LINK = "https://whatsapp.com/channel/0029Vb8rO9c7DAWvQtwE3o3n";
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
-
 export const revalidate = 60;
+
+const categoryHelp: Record<string, { title: string; action: string; note: string; links: { label: string; slug: string }[] }> = {
+  jobs: { title: "सरकारी नौकरी का अगला कदम", action: "आधिकारिक भर्ती पोर्टल पर नोटिफिकेशन, पात्रता और आवेदन स्थिति जांचें।", note: "आवेदन करने से पहले मूल विज्ञापन में योग्यता, शुल्क, तारीख और जरूरी दस्तावेज जरूर मिलाएं।", links: [{ label: "सरकारी नौकरी", slug: "jobs" }, { label: "एडमिट कार्ड", slug: "admit-card" }, { label: "रिजल्ट", slug: "results" }] },
+  exams: { title: "परीक्षा के लिए क्या करें", action: "परीक्षा की आधिकारिक सूचना, पाठ्यक्रम और तारीख को मूल विभागीय स्रोत से मिलाएं।", note: "सोशल मीडिया पोस्ट को अंतिम सूचना न मानें; परीक्षा से जुड़ी तारीख आधिकारिक नोटिस से ही लें।", links: [{ label: "परीक्षा", slug: "exams" }, { label: "एडमिट कार्ड", slug: "admit-card" }, { label: "आंसर की", slug: "answer-key" }] },
+  "admit-card": { title: "एडमिट कार्ड के लिए अगला कदम", action: "आधिकारिक पोर्टल खोलकर अपनी परीक्षा/भर्ती का एडमिट कार्ड और परीक्षा निर्देश देखें।", note: "नाम, रोल नंबर, परीक्षा केंद्र और निर्देश डाउनलोड करने के बाद तुरंत जांचें।", links: [{ label: "परीक्षा", slug: "exams" }, { label: "रिजल्ट", slug: "results" }] },
+  "answer-key": { title: "आंसर की के बाद क्या करें", action: "आधिकारिक आंसर की देखें और यदि आपत्ति विंडो खुली हो तो केवल आधिकारिक प्रक्रिया से आपत्ति दर्ज करें।", note: "आपत्ति की अंतिम तारीख और शुल्क तभी लिखें जब मूल आधिकारिक नोटिस में स्पष्ट हो।", links: [{ label: "आंसर की", slug: "answer-key" }, { label: "रिजल्ट", slug: "results" }] },
+  results: { title: "रिजल्ट देखने का अगला कदम", action: "आधिकारिक परिणाम पोर्टल पर अपना परिणाम/मेरिट स्थिति जांचें और उपलब्ध होने पर परिणाम डाउनलोड करें।", note: "रिजल्ट से जुड़ी कटऑफ, मेरिट या आगे की प्रक्रिया को आधिकारिक दस्तावेज से ही सत्यापित करें।", links: [{ label: "रिजल्ट", slug: "results" }, { label: "सरकारी नौकरी", slug: "jobs" }] },
+  scholarship: { title: "स्कॉलरशिप के लिए क्या करें", action: "आधिकारिक Scholarship Portal पर आवेदन, स्थिति, जरूरी दस्तावेज और नवीनतम आदेश जांचें।", note: "स्कॉलरशिप में संस्था, दस्तावेज, OTR और तारीख से जुड़े नियम बदल सकते हैं; आवेदन से पहले ताजा सरकारी आदेश देखें।", links: [{ label: "स्कॉलरशिप", slug: "scholarship" }, { label: "डॉक्यूमेंट", slug: "documents" }, { label: "सरकारी योजनाएं", slug: "schemes" }] },
+  admission: { title: "एडमिशन का अगला कदम", action: "संबंधित बोर्ड/विश्वविद्यालय/विभाग के आधिकारिक पोर्टल पर प्रवेश सूचना और आवेदन प्रक्रिया देखें।", note: "सीट, शुल्क, योग्यता और अंतिम तारीख को मूल admission notice से मिलाए बिना आवेदन न करें।", links: [{ label: "एडमिशन", slug: "admission" }, { label: "डॉक्यूमेंट", slug: "documents" }] },
+  documents: { title: "डॉक्यूमेंट का अगला कदम", action: "जिस सरकारी काम के लिए दस्तावेज चाहिए, उसके आधिकारिक निर्देश के अनुसार दस्तावेज तैयार और सत्यापित करें।", note: "किसी भी दस्तावेज की वैधता या अनिवार्यता को संबंधित विभाग के मूल निर्देश से मिलाएं।", links: [{ label: "डॉक्यूमेंट", slug: "documents" }, { label: "सरकारी योजनाएं", slug: "schemes" }] },
+  schemes: { title: "सरकारी योजना में अगला कदम", action: "योजना की आधिकारिक वेबसाइट पर पात्रता, आवेदन माध्यम, दस्तावेज और आवेदन/स्थिति लिंक जांचें।", note: "योजना की राशि या पात्रता जैसी जानकारी तभी मानें जब वह वर्तमान आधिकारिक स्रोत में दी गई हो।", links: [{ label: "सरकारी योजनाएं", slug: "schemes" }, { label: "डॉक्यूमेंट", slug: "documents" }] },
+  "current-affairs": { title: "करंट अफेयर्स को कैसे उपयोग करें", action: "घटना के लिए संबंधित सरकारी/आधिकारिक स्रोत देखें और परीक्षा के लिए तथ्य नोट करें।", note: "करंट अफेयर्स में तारीख, पद और सरकारी निर्णय जैसे तथ्यों को आधिकारिक स्रोत से मिलाना बेहतर है।", links: [{ label: "करंट अफेयर्स", slug: "current-affairs" }, { label: "परीक्षा", slug: "exams" }] },
+  "student-updates": { title: "छात्र के लिए अगला कदम", action: "इस अपडेट के मूल सरकारी स्रोत को खोलें और देखें कि आपके लिए आवेदन, डाउनलोड, सत्यापन या अगली प्रक्रिया उपलब्ध है या नहीं।", note: "यह पेज समझाने के लिए है; अंतिम निर्णय हमेशा संबंधित विभाग के आधिकारिक आदेश के आधार पर लें।", links: [{ label: "छात्र अपडेट", slug: "student-updates" }, { label: "डॉक्यूमेंट", slug: "documents" }] },
+};
 
 function parseInlineLinks(text: string) {
   const urlRegex = /(https?:\/\/[^\s]+|[a-zA-Z0-9.-]+\.(?:gov\.in|nic\.in|com|in|org|edu)[^\s]*)/gi;
@@ -39,17 +52,8 @@ function buildReadableContent(title: string, description: string | null, content
   const original = (content || "").trim();
   if (original) return original;
   const summary = (description || "").trim();
-  if (!summary || summary === title.trim()) return `## खबर का सार\n\n${title}`;
-  const sentences = summary.split(/(?<=[।!?])\s+/).filter(Boolean);
-  const first = sentences.slice(0, Math.max(1, Math.ceil(sentences.length / 2))).join(" ");
-  const second = sentences.slice(Math.ceil(sentences.length / 2)).join(" ");
-  return [
-    "## खबर का सार",
-    first,
-    second ? `\n## मुख्य जानकारी\n${second}` : "",
-    "\n## जरूरी बात",
-    "यह विवरण उपलब्ध समाचार फ़ीड में दी गई जानकारी पर आधारित है। जैसे ही अधिक सत्यापित जानकारी उपलब्ध होगी, खबर को अपडेट किया जा सकता है।",
-  ].filter(Boolean).join("\n\n");
+  if (!summary || summary === title.trim()) return `## उपलब्ध जानकारी\n\n${title}`;
+  return `## उपलब्ध आधिकारिक जानकारी\n\n${summary}`;
 }
 
 const getNews = cache(async (idOrSlug: string) => {
@@ -60,127 +64,79 @@ const getNews = cache(async (idOrSlug: string) => {
     const byId = await db.news.findFirst({ where: { status: "PUBLISHED", id: raw }, include: { category: true } });
     if (byId) return byId;
     return await db.news.findFirst({ where: { status: "PUBLISHED", slug: raw }, include: { category: true } });
-  } catch (error) {
-    console.error("[news-detail] database read failed", error);
-    return null;
-  }
+  } catch (error) { console.error("[student-detail] database read failed", error); return null; }
 });
 
 const getRelatedNews = cache(async (categoryId: string, excludeId: string) => {
   try {
-    return await db.news.findMany({
-      where: { status: "PUBLISHED", categoryId, id: { not: excludeId } },
-      orderBy: [{ publishedAt: "desc" }, { viewCount: "desc" }],
-      take: 5,
-      select: { id: true, title: true, imageUrl: true, publishedAt: true, createdAt: true },
-    });
-  } catch (error) {
-    console.error("[news-detail] related news failed", error);
-    return [];
-  }
+    return await db.news.findMany({ where: { status: "PUBLISHED", categoryId, id: { not: excludeId } }, orderBy: [{ publishedAt: "desc" }, { viewCount: "desc" }], take: 5, select: { id: true, title: true, imageUrl: true, publishedAt: true, createdAt: true } });
+  } catch (error) { console.error("[student-detail] related failed", error); return []; }
 });
 
-function safeIso(value: Date | null | undefined) {
-  try { return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : undefined; } catch { return undefined; }
-}
+function safeIso(value: Date | null | undefined) { try { return value instanceof Date && !Number.isNaN(value.getTime()) ? value.toISOString() : undefined; } catch { return undefined; } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   try {
     const { id } = await params;
     const item = await getNews(id);
-    if (!item) return { title: "खबर नहीं मिली", robots: { index: false, follow: true } };
+    if (!item) return { title: "जानकारी नहीं मिली", robots: { index: false, follow: true } };
     const description = (item.description || item.title).slice(0, 160);
-    const publishedTime = safeIso(item.publishedAt);
-    const modifiedTime = safeIso(item.updatedAt);
-    return {
-      title: item.title,
-      description,
-      robots: { index: true, follow: true },
-      alternates: { canonical: `${SITE_URL}/news/${item.slug}` },
-      openGraph: { type: "article", title: item.title, description, url: `${SITE_URL}/news/${item.slug}`, publishedTime, modifiedTime, images: item.imageUrl ? [{ url: item.imageUrl, alt: item.title }] : undefined },
-      twitter: { card: "summary_large_image", title: item.title, description, images: item.imageUrl ? [item.imageUrl] : undefined },
-    };
-  } catch (error) {
-    console.error("[news-detail] metadata failed", error);
-    return { title: "Hindi News", robots: { index: false, follow: true } };
-  }
+    return { title: `${item.title} | Student Update`, description, robots: { index: true, follow: true }, alternates: { canonical: `${SITE_URL}/news/${item.slug}` }, openGraph: { type: "article", title: item.title, description, url: `${SITE_URL}/news/${item.slug}`, publishedTime: safeIso(item.publishedAt), modifiedTime: safeIso(item.updatedAt), images: item.imageUrl ? [{ url: item.imageUrl, alt: item.title }] : undefined }, twitter: { card: "summary_large_image", title: item.title, description, images: item.imageUrl ? [item.imageUrl] : undefined } };
+  } catch { return { title: "Student Update", robots: { index: false, follow: true } }; }
 }
 
 export default async function NewsDetailPage({ params }: Props) {
   const { id } = await params;
   const newsItem = await getNews(id);
   if (!newsItem) notFound();
-
-  const category = newsItem.category || { slug: "", name: "न्यूज़" };
+  const category = newsItem.category || { slug: "student-updates", name: "राजस्थान छात्र अपडेट" };
+  const help = categoryHelp[category.slug] || categoryHelp["student-updates"];
   const relatedNews = await getRelatedNews(newsItem.categoryId, newsItem.id);
-  void db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[news-detail] view update failed", error));
-
+  void db.news.update({ where: { id: newsItem.id }, data: { viewCount: { increment: 1 } } }).catch((error) => console.error("[student-detail] view update failed", error));
   const articleUrl = `${SITE_URL}/news/${newsItem.slug}`;
   const bodyText = buildReadableContent(newsItem.title, newsItem.description, newsItem.content);
-  const schema = {
-    "@context": "https://schema.org",
-    "@type": newsItem.isSponsored ? "Article" : "NewsArticle",
-    headline: newsItem.title,
-    description: newsItem.description || newsItem.title,
-    datePublished: safeIso(newsItem.publishedAt),
-    dateModified: safeIso(newsItem.updatedAt),
-    inLanguage: "hi-IN",
-    articleSection: category.name,
-    mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl },
-    image: newsItem.imageUrl ? [newsItem.imageUrl] : [],
-    author: { "@type": "Person", name: newsItem.authorName || "Hindi News Desk" },
-    publisher: { "@type": "Organization", name: "Hindi News", url: SITE_URL },
-  };
-  const breadcrumbSchema = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "होम", item: SITE_URL },
-      ...(category.slug ? [{ "@type": "ListItem", position: 2, name: category.name, item: `${SITE_URL}/category/${category.slug}` }] : []),
-      { "@type": "ListItem", position: category.slug ? 3 : 2, name: newsItem.title, item: articleUrl },
-    ],
-  };
+  const schema = { "@context": "https://schema.org", "@type": "Article", headline: newsItem.title, description: newsItem.description || newsItem.title, datePublished: safeIso(newsItem.publishedAt), dateModified: safeIso(newsItem.updatedAt), inLanguage: "hi-IN", articleSection: category.name, mainEntityOfPage: { "@type": "WebPage", "@id": articleUrl }, image: newsItem.imageUrl ? [newsItem.imageUrl] : [], author: { "@type": "Organization", name: "Student Update" }, publisher: { "@type": "Organization", name: "Student Update", url: SITE_URL } };
+  const breadcrumbSchema = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "होम", item: SITE_URL }, { "@type": "ListItem", position: 2, name: category.name, item: `${SITE_URL}/category/${category.slug}` }, { "@type": "ListItem", position: 3, name: newsItem.title, item: articleUrl }] };
 
   return (
     <main className="min-h-screen bg-gray-50 py-6 md:py-10">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }} />
       <div className="mx-auto max-w-6xl px-4">
-        <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500"><Link href="/">होम</Link><span>/</span>{category.slug ? <Link href={`/category/${category.slug}`} className="text-red-600 hover:underline">{category.name}</Link> : <span>न्यूज़</span>}</div>
+        <div className="mb-5 flex flex-wrap items-center gap-2 text-xs font-bold text-gray-500"><Link href="/">होम</Link><span>/</span><Link href={`/category/${category.slug}`} className="text-red-600 hover:underline">{category.name}</Link></div>
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_320px]">
           <article className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm sm:p-8">
-            <div className="flex flex-wrap items-center gap-2 text-xs">
-              <span className="rounded-full bg-red-50 px-3 py-1 font-black text-red-600">{category.name}</span>
-              {newsItem.isBreaking && <span className="rounded-full bg-red-600 px-3 py-1 font-black text-white">ब्रेकिंग न्यूज़</span>}
-              {newsItem.isOriginal && <span className="rounded-full bg-blue-50 px-3 py-1 font-black text-blue-700">विशेष रिपोर्ट</span>}
-              {newsItem.isSponsored && <span className="rounded-full bg-amber-50 px-3 py-1 font-black text-amber-700">प्रायोजित</span>}
-              <time className="text-gray-400">{new Date(newsItem.publishedAt || newsItem.createdAt).toLocaleString("hi-IN", { dateStyle: "long", timeStyle: "short" })}</time>
-            </div>
+            <div className="flex flex-wrap items-center gap-2 text-xs"><span className="rounded-full bg-blue-50 px-3 py-1 font-black text-blue-700">{category.name}</span><span className="rounded-full bg-green-50 px-3 py-1 font-black text-green-700">Official-source guide</span><time className="text-gray-400">{new Date(newsItem.publishedAt || newsItem.createdAt).toLocaleString("hi-IN", { dateStyle: "long", timeStyle: "short" })}</time></div>
             <h1 className="mt-4 text-2xl font-black leading-tight text-gray-950 sm:text-3xl md:text-4xl">{newsItem.title}</h1>
-            <p className="mt-4 text-sm font-semibold leading-7 text-gray-600 sm:text-base">{newsItem.description || newsItem.title}</p>
-            <div className="mt-3 flex flex-wrap gap-4 text-xs font-semibold text-gray-400"><span>👁️ {Number(newsItem.viewCount || 0).toLocaleString("hi-IN")} views</span>{newsItem.authorName && <span>✍️ {newsItem.authorName}</span>}</div>
-            {newsItem.isSponsored && <div className="mt-5 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><strong>प्रायोजित सामग्री:</strong> {newsItem.sponsorName || "यह सामग्री एक विज्ञापनदाता द्वारा प्रायोजित है।"}{newsItem.sponsorUrl && <> · <a href={newsItem.sponsorUrl} target="_blank" rel="noopener noreferrer" className="font-bold underline">विज्ञापनदाता की वेबसाइट</a></>}</div>}
-            {newsItem.imageUrl && <div className="relative mt-6 h-[280px] overflow-hidden rounded-2xl bg-gray-100 sm:h-[420px] md:h-[520px]"><Image src={newsItem.imageUrl} alt={newsItem.title} fill priority sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" /></div>}
-            <div className="mt-6 rounded-2xl border border-red-100 bg-red-50/60 p-5">
-              <h2 className="text-base font-black text-gray-950">एक नजर में</h2>
-              <p className="mt-2 text-sm leading-7 text-gray-700">{newsItem.description || "इस खबर की उपलब्ध सत्यापित जानकारी नीचे विस्तार से दी गई है।"}</p>
-            </div>
-            <AdSlot className="my-5" />
-            <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-black text-white">Facebook पर शेयर करें</a></div>
-            <div className="my-6 rounded-2xl border border-green-200 bg-green-50 p-5"><p className="text-sm font-black text-gray-900">📲 जरूरी खबरों और सरकारी नौकरी के अपडेट WhatsApp पर पाएं</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block rounded-xl bg-green-600 px-5 py-2 text-xs font-black text-white">चैनल से जुड़ें →</a></div>
-            <section aria-label="खबर की पूरी जानकारी" className="mt-8 border-t border-gray-100 pt-6">
-              <h2 className="mb-4 text-xl font-black text-gray-950">विस्तृत जानकारी</h2>
-              <div className="article-body">{renderFormattedContent(bodyText)}</div>
+            <p className="mt-4 text-sm font-semibold leading-7 text-gray-600 sm:text-base">{newsItem.description || "इस अपडेट से जुड़े सत्यापित तथ्यों के आधार पर आगे की प्रक्रिया समझें।"}</p>
+            {newsItem.imageUrl && <div className="relative mt-6 h-[260px] overflow-hidden rounded-2xl bg-gray-100 sm:h-[400px]"><Image src={newsItem.imageUrl} alt={newsItem.title} fill priority sizes="(max-width: 1024px) 100vw, 800px" className="object-cover" /></div>}
+
+            <section className="mt-6 rounded-2xl border border-blue-200 bg-blue-50 p-5" aria-label="अभी क्या करें">
+              <p className="text-xs font-black uppercase tracking-wide text-blue-700">अभी क्या करें</p>
+              <h2 className="mt-1 text-xl font-black text-gray-950">{help.title}</h2>
+              <p className="mt-2 text-sm leading-7 text-gray-700">{help.action}</p>
+              {newsItem.sourceUrl ? <a href={newsItem.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex rounded-xl bg-blue-700 px-5 py-3 text-sm font-black text-white hover:bg-blue-800">आधिकारिक स्रोत खोलें ↗</a> : <div className="mt-4 rounded-xl bg-white p-3 text-xs font-bold text-gray-600">आधिकारिक लिंक उपलब्ध होने पर यहां दिखाया जाएगा।</div>}
             </section>
+
+            <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-5"><h2 className="text-base font-black text-gray-950">⚠️ जरूरी सावधानी</h2><p className="mt-2 text-sm leading-7 text-gray-700">{help.note}</p></section>
+
             <AdSlot className="my-5" />
-            {newsItem.sourceName && <div className="mt-8 border-t pt-5 text-xs text-gray-500">स्रोत: <span className="font-bold">{newsItem.sourceName}</span>{newsItem.sourceUrl && <> · <a href={newsItem.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-red-600 hover:underline">मूल स्रोत देखें ↗</a></>}</div>}
+
+            <section className="mt-6" aria-label="सत्यापित जानकारी"><h2 className="mb-3 text-xl font-black text-gray-950">सत्यापित जानकारी</h2><div className="article-body">{renderFormattedContent(bodyText)}</div></section>
+
+            <section className="mt-7 border-t pt-6"><h2 className="text-xl font-black text-gray-950">इस काम से जुड़े अगले चरण</h2><div className="mt-4 grid gap-3 sm:grid-cols-3">{help.links.map((link) => <Link key={link.slug} href={`/category/${link.slug}`} className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm font-black text-gray-800 hover:border-red-300 hover:bg-red-50 hover:text-red-700">{link.label} →</Link>)}</div></section>
+
+            {newsItem.sourceName && <div className="mt-7 rounded-xl border border-gray-200 bg-gray-50 p-4 text-xs text-gray-600">आधिकारिक स्रोत: <span className="font-black">{newsItem.sourceName}</span>{newsItem.sourceUrl && <> · <a href={newsItem.sourceUrl} target="_blank" rel="noopener noreferrer" className="font-bold text-red-600 hover:underline">मूल पेज देखें ↗</a></>}</div>}
+
+            <div className="my-6 flex flex-wrap gap-3"><a href={`https://wa.me/?text=${encodeURIComponent(newsItem.title + " " + articleUrl)}`} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-600 px-4 py-2 text-xs font-black text-white">WhatsApp पर शेयर करें</a><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="rounded-xl bg-green-50 px-4 py-2 text-xs font-black text-green-700">Student Update चैनल →</a></div>
+            <AdSlot className="my-5" />
           </article>
+
           <aside className="space-y-6">
             <AdSlot className="my-0" />
-            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><div className="mb-4 flex items-center justify-between border-b-2 border-red-600 pb-2"><h2 className="font-black">🔥 संबंधित खबरें</h2><Link href={category.slug ? `/category/${category.slug}` : "/"} className="text-xs font-black text-red-600">सभी →</Link></div>
-              {relatedNews.length ? <div className="space-y-4">{relatedNews.map((item) => <Link key={item.id} href={`/news/${item.id}`} className="group flex gap-3"><div className="relative h-16 w-20 shrink-0 overflow-hidden rounded-lg bg-gray-100">{item.imageUrl ? <Image src={item.imageUrl} alt="" fill sizes="80px" className="object-cover" /> : null}</div><div className="min-w-0"><p className="line-clamp-2 text-sm font-bold leading-6 text-gray-800 group-hover:text-red-600">{item.title}</p><time className="text-[11px] text-gray-400">{new Date(item.publishedAt || item.createdAt).toLocaleDateString("hi-IN")}</time></div></Link>)}</div> : <p className="text-sm leading-7 text-gray-600">इस खबर से जुड़ी दूसरी खबरें जल्द यहाँ दिखाई जाएंगी।</p>}
-            </div>
-            <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">📲 WhatsApp</h2><p className="mt-2 text-xs leading-5 text-gray-300">ताज़ा खबरों के अपडेट के लिए चैनल से जुड़ें।</p><a href={WHATSAPP_LINK} target="_blank" rel="noopener noreferrer" className="mt-4 inline-block rounded-lg bg-green-500 px-4 py-2 text-xs font-black">जुड़ें →</a></div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><h2 className="mb-4 border-b-2 border-red-600 pb-2 font-black">📌 छात्र के काम के अगले पेज</h2><div className="grid gap-2">{[{label:"सरकारी नौकरी",slug:"jobs"},{label:"परीक्षा",slug:"exams"},{label:"एडमिट कार्ड",slug:"admit-card"},{label:"आंसर की",slug:"answer-key"},{label:"रिजल्ट",slug:"results"},{label:"स्कॉलरशिप",slug:"scholarship"},{label:"एडमिशन",slug:"admission"},{label:"डॉक्यूमेंट",slug:"documents"},{label:"सरकारी योजनाएं",slug:"schemes"}].map((x) => <Link key={x.slug} href={`/category/${x.slug}`} className="rounded-lg px-3 py-2 text-sm font-bold text-gray-700 hover:bg-red-50 hover:text-red-700">{x.label} →</Link>)}</div></div>
+            <div className="rounded-2xl bg-gray-950 p-5 text-white"><h2 className="font-black">🎓 Student Update</h2><p className="mt-2 text-xs leading-6 text-gray-300">यहां खबर को सिर्फ पढ़ाया नहीं जाता—सरकारी काम की अगली प्रक्रिया समझाई जाती है।</p><Link href="/" className="mt-4 inline-block rounded-lg bg-white px-4 py-2 text-xs font-black text-gray-950">छात्र होम खोलें →</Link></div>
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><h2 className="mb-4 border-b-2 border-red-600 pb-2 font-black">🔗 इसी विषय की जानकारी</h2>{relatedNews.length ? <div className="space-y-4">{relatedNews.map((item) => <Link key={item.id} href={`/news/${item.id}`} className="group block"><p className="line-clamp-2 text-sm font-bold leading-6 text-gray-800 group-hover:text-red-600">{item.title}</p><time className="text-[11px] text-gray-400">{new Date(item.publishedAt || item.createdAt).toLocaleDateString("hi-IN")}</time></Link>)}</div> : <p className="text-sm leading-7 text-gray-600">इस विषय की नई जानकारी उपलब्ध होने पर यहां दिखाई जाएगी।</p>}</div>
           </aside>
         </div>
       </div>
