@@ -12,7 +12,9 @@ const navigation = [
   { name: "रिजल्ट", href: "/category/results" },
   { name: "स्कॉलरशिप", href: "/category/scholarship" },
   { name: "एडमिशन", href: "/category/admission" },
+  { name: "शिक्षा", href: "/category/education" },
   { name: "डॉक्यूमेंट", href: "/category/documents" },
+  { name: "नागरिक सेवाएं", href: "/category/citizen-services" },
   { name: "सरकारी योजनाएं", href: "/category/schemes" },
   { name: "करंट अफेयर्स", href: "/category/current-affairs" },
 ];
@@ -25,7 +27,7 @@ export default function Header() {
         <div className="mx-auto flex min-h-16 max-w-7xl items-center justify-between gap-3 px-4">
           <Link href="/" className="shrink-0 text-xl font-black sm:text-2xl">🎓 Student Update</Link>
           <form action="/search" className="hidden max-w-xl flex-1 sm:flex">
-            <input name="q" placeholder="नौकरी, परीक्षा, रिजल्ट या स्कॉलरशिप खोजें..." className="w-full rounded-l-lg border-0 px-4 py-2 text-sm text-gray-900 outline-none" />
+            <input name="q" placeholder="नौकरी, परीक्षा, रिजल्ट, सेवा या स्कॉलरशिप खोजें..." className="w-full rounded-l-lg border-0 px-4 py-2 text-sm text-gray-900 outline-none" />
             <button className="rounded-r-lg bg-gray-950 px-4 text-sm font-bold">काम खोजें</button>
           </form>
           <div className="hidden items-center gap-2 sm:flex">
