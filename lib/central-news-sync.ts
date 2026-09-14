@@ -4,9 +4,7 @@ import { processNews } from "@/lib/news-processor";
 type Source = { url: string; source: string; fallback: string; keywords: string[] };
 
 // India-wide official monitoring layer. Rajasthan sources are handled by
-// lib/news-fetcher.ts; this layer covers the major national student/job/exam
-// authorities so the portal behaves like a current India-level result/jobs
-// portal without depending on copied third-party articles.
+// lib/news-fetcher.ts; this layer covers major national student/job/exam authorities.
 const SOURCES: Source[] = [
   { url: "https://ssc.gov.in/", source: "SSC", fallback: "jobs", keywords: ["notice", "examination", "recruitment", "result", "admit", "answer", "calendar", "selection"] },
   { url: "https://upsc.gov.in/", source: "UPSC", fallback: "jobs", keywords: ["recruitment", "examination", "notice", "result", "interview", "admit", "vacancy"] },
@@ -25,7 +23,6 @@ const SOURCES: Source[] = [
   { url: "https://www.bhel.com/careers", source: "BHEL Careers", fallback: "jobs", keywords: ["career", "recruitment", "vacancy", "apprentice", "result", "application"] },
   { url: "https://www.coalindia.in/career-cil/", source: "Coal India Careers", fallback: "jobs", keywords: ["career", "recruitment", "vacancy", "management trainee", "result", "application"] },
   { url: "https://www.licindia.in/careers", source: "LIC Careers", fallback: "jobs", keywords: ["career", "recruitment", "apprentice", "assistant", "officer", "result", "application"] },
-  { url: "https://www.rrbcdg.gov.in/", source: "Railway Exams", fallback: "exams", keywords: ["exam", "schedule", "calendar", "city", "syllabus", "answer", "result"] },
   { url: "https://ctet.nic.in/", source: "CTET", fallback: "exams", keywords: ["ctet", "notification", "admit", "result", "answer", "exam"] },
   { url: "https://ugcnet.nta.ac.in/", source: "UGC NET", fallback: "exams", keywords: ["ugc-net", "notice", "admit", "result", "answer", "exam"] },
   { url: "https://neet.nta.nic.in/", source: "NEET", fallback: "exams", keywords: ["neet", "notice", "admit", "result", "answer", "counselling", "exam"] },
@@ -43,8 +40,19 @@ const CATEGORY_MAP: Record<string, string> = {
   scholarship: "स्कॉलरशिप", admission: "एडमिशन", documents: "डॉक्यूमेंट", schemes: "सरकारी योजनाएं", education: "शिक्षा", "student-updates": "छात्र अपडेट"
 };
 
-function clean(value: string) { return value.replace(/<script[\\s\\S]*?<\\/script>/gi, " ").replace(/<style[\\s\\S]*?<\\/style>/gi, " ").replace(/<[^>]+>/g, " ").replace(/&nbsp;/gi, " ").replace(/&amp;/gi, "&").replace(/\\s+/g, " ").trim(); }
+function clean(value: string) {
+  return value
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 function absolute(base: string, href: string) { try { return new URL(href, base).toString(); } catch { return ""; } }
+
 function classify(text: string, fallback: string) {
   const v = text.toLowerCase();
   if (/admit|प्रवेश पत्र|प्रवेशपत्र/.test(v)) return "admit-card";
@@ -64,7 +72,7 @@ async function fetchSource(source: Source) {
   const html = await response.text();
   const items: Array<{ title: string; url: string; categorySlug: string; source: string }> = [];
   const seen = new Set<string>();
-  for (const match of html.matchAll(/<a\\b[^>]*href=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/a>/gi)) {
+  for (const match of html.matchAll(/<a\b[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)) {
     const title = clean(match[2]);
     const url = absolute(source.url, match[1]);
     if (!title || title.length < 12 || title.length > 220 || !url || /javascript:|mailto:|#/.test(url)) continue;
