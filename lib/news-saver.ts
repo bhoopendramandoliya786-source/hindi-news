@@ -23,6 +23,7 @@ const CATEGORY_MAP: Record<string, string> = {
   documents: "डॉक्यूमेंट",
   schemes: "सरकारी योजनाएं",
   "citizen-services": "नागरिक सेवाएं",
+  education: "शिक्षा",
   "current-affairs": "करंट अफेयर्स",
   "student-updates": "राजस्थान छात्र अपडेट",
 };
