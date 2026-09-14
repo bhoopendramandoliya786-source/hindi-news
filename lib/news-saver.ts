@@ -2,7 +2,6 @@ import { db } from "@/lib/db";
 import { fetchAllHindiNews } from "@/lib/news-fetcher";
 import { processNews } from "@/lib/news-processor";
 import { buildStudentIdentity } from "@/lib/student-context";
-import { syncCentralOfficialNews } from "@/lib/central-news-sync";
 
 type ExistingNews = {
   id: string;
@@ -118,12 +117,9 @@ export async function saveIndiaNews() {
     } catch (error) { console.error(`Unable to save: ${article.title}`, error); }
   }
 
-  let central = { fetched: 0, saved: 0, skipped: 0 };
-  try {
-    central = await syncCentralOfficialNews();
-  } catch (error) {
-    console.error("Central official monitor failed; Rajasthan sync remains successful:", error);
-  }
-
-  return { fetched: articles.length + central.fetched, saved: saved + central.saved, skipped: skipped + central.skipped, updated };
+  // Central/official monitoring is intentionally orchestrated by
+  // scripts/fetch-news.ts. Keeping it here as well caused every scheduled run
+  // to fetch and process the central sources twice, increasing database load
+  // and duplicate-write contention.
+  return { fetched: articles.length, saved, skipped, updated };
 }
