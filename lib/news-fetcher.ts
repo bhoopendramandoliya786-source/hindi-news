@@ -27,13 +27,19 @@ const SOURCES: OfficialSource[] = [
     url: "https://www.recruitment.rajasthan.gov.in/",
     source: "Rajasthan Recruitment Portal",
     defaultCategory: "jobs",
-    keywords: ["recruitment", "apply", "admit", "result", "exam", "answer", "vacancy", "joint recruitment", "भर्ती", "आवेदन", "प्रवेश", "परिणाम"],
+    keywords: ["recruitment", "apply", "admit", "result", "exam", "answer", "vacancy", "joint recruitment", "भर्ती", "आवेदन", "प्रवेश", "परिणाम", "otr"],
   },
   {
     url: "https://sje.rajasthan.gov.in/Scholarship_Portal.aspx",
     source: "Rajasthan Social Justice & Empowerment Department",
     defaultCategory: "scholarship",
-    keywords: ["scholarship", "student", "date extension", "scheme", "faq", "blacklist", "biometric", "छात्रवृत्ति", "छात्र", "योजना", "तिथि"],
+    keywords: ["scholarship", "student", "date extension", "scheme", "faq", "blacklist", "biometric", "otr", "छात्रवृत्ति", "छात्र", "योजना", "तिथि"],
+  },
+  {
+    url: "https://scholarships.gov.in/",
+    source: "National Scholarship Portal (NSP)",
+    defaultCategory: "scholarship",
+    keywords: ["scholarship", "student", "academic year", "2026-27", "otr", "application", "verification", "merit", "welfare"],
   },
   {
     url: "https://rajeduboard.rajasthan.gov.in/main.asp",
@@ -52,6 +58,12 @@ const SOURCES: OfficialSource[] = [
     source: "Shala Darpan Rajasthan",
     defaultCategory: "admit-card",
     keywords: ["admit card", "scholarship", "प्रवेश पत्र", "छात्रवृत्ति"],
+  },
+  {
+    url: "https://rajshaladarpan.rajasthan.gov.in/ShalaSamvad/Home/SchemeSearch.aspx",
+    source: "Shala Samvad Rajasthan",
+    defaultCategory: "schemes",
+    keywords: ["student beneficiary", "scheme", "beneficiary", "student", "scheme search", "योजना", "लाभार्थी", "छात्र"],
   },
 ];
 
@@ -79,10 +91,10 @@ function classify(text: string, fallback: string) {
   if (/admit|प्रवेश पत्र|प्रवेशपत्र/.test(value)) return "admit-card";
   if (/answer key|model answer|आंसर|उत्तर कुंजी|objection/.test(value)) return "answer-key";
   if (/result|परिणाम|रिजल्ट|cutoff|cut off/.test(value)) return "results";
-  if (/scholarship|छात्रवृत्ति|scooty|स्कूटी/.test(value)) return "scholarship";
+  if (/scholarship|छात्रवृत्ति|scooty|स्कूटी|otr/.test(value)) return "scholarship";
   if (/admission|प्रवेश|counselling|counseling/.test(value)) return "admission";
   if (/document|certificate|प्रमाण|दस्तावेज/.test(value)) return "documents";
-  if (/scheme|योजना|incentive|वजीफा/.test(value)) return "schemes";
+  if (/scheme|योजना|incentive|वजीफा|beneficiary|लाभार्थी/.test(value)) return "schemes";
   if (/exam|परीक्षा|syllabus|scheme and syllabus|calendar/.test(value)) return "exams";
   if (/job|recruit|vacancy|भर्ती|आवेदन|apply|advertisement|advt|selection|jen|teacher|police/.test(value)) return "jobs";
   return fallback;
@@ -93,6 +105,35 @@ function externalId(url: string, title: string) {
     .trim()
     .toLowerCase()
     .slice(0, 900);
+}
+
+function buildStudentDescription(title: string, source: OfficialSource, categorySlug: string, sourceUrl: string) {
+  const lower = title.toLowerCase();
+  const action = categorySlug === "jobs"
+    ? "अगर आप इस भर्ती से जुड़े हैं, तो पहले official notice में योग्यता, आयु, शुल्क, तारीख और दस्तावेज मिलाएं; पात्र होने पर आवेदन/अगला चरण official portal से ही करें।"
+    : categorySlug === "admit-card"
+      ? "अगर आपका admit card जारी हुआ है, तो official page से डाउनलोड करके नाम, रोल नंबर, परीक्षा केंद्र और परीक्षा निर्देश तुरंत जांचें।"
+      : categorySlug === "answer-key"
+        ? "अगर आपने परीक्षा दी है, तो official answer key से उत्तर मिलाएं और objection window उपलब्ध हो तो उसी official प्रक्रिया से आपत्ति दर्ज करें।"
+        : categorySlug === "results"
+          ? "अगर आप इस परीक्षा/परिणाम से जुड़े उम्मीदवार हैं, तो official result page पर अपना परिणाम देखें और आगे की प्रक्रिया official notice के अनुसार करें।"
+          : categorySlug === "scholarship"
+            ? "अगर आप छात्रवृत्ति लेना चाहते हैं, तो अपने session और scheme के अनुसार eligibility, OTR, documents, application/status और verification की स्थिति official portal पर जांचें।"
+            : categorySlug === "schemes"
+              ? "अगर आप किसी सरकारी योजना का लाभ देख रहे हैं, तो अपनी class, category, gender, income और अन्य लागू शर्तों के अनुसार official scheme details जांचें।"
+              : categorySlug === "exams"
+                ? "अगर यह परीक्षा आपके लिए लागू है, तो official notice से परीक्षा तारीख, syllabus, instructions और आगे की प्रक्रिया मिलाएं।"
+                : categorySlug === "admission"
+                  ? "अगर आप admission लेने वाले हैं, तो official notice में eligibility, dates, documents और counselling/application process जांचें।"
+                  : "इस update का सही मतलब title और official source से समझें और यदि कोई action आपके लिए लागू है तो केवल official portal पर करें।";
+
+  const context = lower.includes("date") || lower.includes("extension") || lower.includes("तिथि")
+    ? "यह अपडेट तारीख/समय-सीमा से जुड़ा हो सकता है, इसलिए पुरानी जानकारी के बजाय इसी official notice को अंतिम मानें।"
+    : lower.includes("faq") || lower.includes("help") || lower.includes("manual")
+      ? "यह जानकारी प्रक्रिया समझने में मदद कर सकती है; आवेदन से पहले संबंधित official instructions जरूर पढ़ें।"
+      : "यह पेज official source की जानकारी को छात्र के काम के हिसाब से आसान भाषा में समझाता है; अंतिम तथ्य मूल official page से ही सत्यापित करें।";
+
+  return `क्या अपडेट है?\n${title}\n\nकिसके काम का है?\n${source.source} से आया यह update ${categorySlug === "jobs" ? "नौकरी/भर्ती उम्मीदवारों" : categorySlug === "scholarship" ? "छात्रवृत्ति लेने वाले छात्रों" : "संबंधित छात्रों या अभ्यर्थियों"} के लिए उपयोगी है।\n\nअभी क्या करें?\n${action}\n\nध्यान रखें\n${context}\n\nOfficial source\n${source.source}: ${sourceUrl}`;
 }
 
 function extractOfficialItems(html: string, source: OfficialSource): NormalizedNews[] {
@@ -113,7 +154,7 @@ function extractOfficialItems(html: string, source: OfficialSource): NormalizedN
     const categorySlug = classify(title, source.defaultCategory);
     items.push({
       title,
-      description: `यह छात्र उपयोगी अपडेट ${source.source} के आधिकारिक स्रोत पर उपलब्ध जानकारी से लिया गया है। जरूरी तारीख, पात्रता, आवेदन या परिणाम जैसी जानकारी के लिए मूल आधिकारिक पेज देखें।`,
+      description: buildStudentDescription(title, source, categorySlug, href),
       imageUrl: null,
       sourceName: source.source,
       sourceUrl: href,
@@ -124,9 +165,10 @@ function extractOfficialItems(html: string, source: OfficialSource): NormalizedN
   }
 
   if (!items.length) {
+    const title = `${source.source}: आधिकारिक छात्र अपडेट`;
     items.push({
-      title: `${source.source}: आधिकारिक छात्र अपडेट`,
-      description: `इस स्रोत पर उपलब्ध छात्र, परीक्षा, भर्ती, रिजल्ट या योजना से जुड़ी आधिकारिक जानकारी देखें।`,
+      title,
+      description: buildStudentDescription(title, source, source.defaultCategory, source.url),
       imageUrl: null,
       sourceName: source.source,
       sourceUrl: source.url,
