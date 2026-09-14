@@ -22,6 +22,7 @@ const CATEGORY_MAP: Record<string, string> = {
   admission: "एडमिशन",
   documents: "डॉक्यूमेंट",
   schemes: "सरकारी योजनाएं",
+  "citizen-services": "नागरिक सेवाएं",
   "current-affairs": "करंट अफेयर्स",
   "student-updates": "राजस्थान छात्र अपडेट",
 };
@@ -45,7 +46,7 @@ export async function saveIndiaNews() {
 
   for (const [slug, name] of Object.entries(CATEGORY_MAP)) {
     try {
-      const cat = await db.category.upsert({ where: { slug }, update: { name }, create: { name, slug, description: `${name} से जुड़ी छात्र उपयोगी जानकारी` } });
+      const cat = await db.category.upsert({ where: { slug }, update: { name }, create: { name, slug, description: `${name} से जुड़ी छात्र और नागरिक उपयोगी जानकारी` } });
       categoryCache[slug] = cat.id;
     } catch (e) { console.error("Category cache error:", e); }
   }
