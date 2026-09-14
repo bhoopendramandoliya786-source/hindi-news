@@ -29,10 +29,18 @@ function dateText(value: Date | string | null | undefined) {
 }
 
 export default async function StudentPortalHome() {
-  const [latest, categories] = await Promise.all([
-    db.news.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }], take: 36, select: { id: true, slug: true, title: true, description: true, publishedAt: true, createdAt: true, sourceName: true, category: { select: { name: true, slug: true } } } }),
-    db.category.findMany({ orderBy: { name: "asc" }, select: { name: true, slug: true, _count: { select: { news: { where: { status: "PUBLISHED" } } } } } }),
-  ]);
+  let latest: any[] = [];
+  let categories: any[] = [];
+
+  try {
+    [latest, categories] = await Promise.all([
+      db.news.findMany({ where: { status: "PUBLISHED" }, orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }], take: 36, select: { id: true, slug: true, title: true, description: true, publishedAt: true, createdAt: true, sourceName: true, category: { select: { name: true, slug: true } } } }),
+      db.category.findMany({ orderBy: { name: "asc" }, select: { name: true, slug: true, _count: { select: { news: { where: { status: "PUBLISHED" } } } } } }),
+    ]);
+  } catch (error) {
+    console.error("Student Update homepage database read failed:", error);
+  }
+
   const count = (slug: string) => categories.find((x) => x.slug === slug)?._count.news || 0;
 
   return <main className="min-h-screen bg-gray-50 pb-16"><div className="mx-auto max-w-7xl px-4 py-5 sm:py-8">
