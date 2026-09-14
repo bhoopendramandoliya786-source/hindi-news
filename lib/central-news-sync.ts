@@ -63,14 +63,51 @@ export async function syncCentralOfficialNews() {
   }
   const results = await Promise.allSettled(SOURCES.map(fetchSource));
   const articles = results.flatMap(r => r.status === "fulfilled" ? r.value : []);
-  let saved = 0, skipped = 0;
+  let saved = 0, updated = 0, skipped = 0;
+
   for (const article of articles) {
     const externalId = `central:${article.url}`.slice(0, 900);
-    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true } });
-    if (existing) { skipped++; continue; }
     const category = await db.category.findUnique({ where: { slug: article.categorySlug }, select: { id: true } });
     if (!category) continue;
-    const processed = processNews({ title: article.title, description: `Official update from ${article.source}. Open the source before taking action.`, imageUrl: null, sourceName: article.source, sourceUrl: article.url, publishedAt: new Date(), externalId, categorySlug: article.categorySlug }, `central-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+
+    const processed = processNews(
+      {
+        title: article.title,
+        description: `Official update from ${article.source}. Open the source before taking action.`,
+        imageUrl: null,
+        sourceName: article.source,
+        sourceUrl: article.url,
+        publishedAt: new Date(),
+        externalId,
+        categorySlug: article.categorySlug
+      },
+      `central-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+    );
+
+    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true, title: true, description: true, content: true, categoryId: true } });
+
+    if (existing) {
+      const changed = existing.title !== processed.title || existing.description !== processed.description || existing.content !== processed.content || existing.categoryId !== category.id;
+      if (!changed) { skipped++; continue; }
+      await db.news.update({
+        where: { id: existing.id },
+        data: {
+          title: processed.title,
+          slug: processed.slug,
+          description: processed.description,
+          content: processed.content,
+          imageUrl: processed.imageUrl,
+          sourceName: processed.sourceName,
+          sourceUrl: processed.sourceUrl,
+          categoryId: category.id,
+          status: "PUBLISHED",
+          publishedAt: processed.publishedAt || new Date()
+        }
+      });
+      updated++;
+      continue;
+    }
+
     try {
       await db.news.create({ data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId, language: "HI", status: "PUBLISHED", categoryId: category.id, publishedAt: processed.publishedAt || new Date() } });
       saved++;
@@ -78,5 +115,5 @@ export async function syncCentralOfficialNews() {
       if (error?.code === "P2002") skipped++; else throw error;
     }
   }
-  return { fetched: articles.length, saved, skipped };
+  return { fetched: articles.length, saved, updated, skipped };
 }
