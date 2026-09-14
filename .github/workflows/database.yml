@@ -5,8 +5,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Avoid the top of the hour, when GitHub reports heavier schedule load.
-    - cron: "7,22,37,52 * * * *"
+    # Check official sources frequently; GitHub may delay scheduled runs during load.
+    - cron: "*/10 * * * *"
 
 concurrency:
   group: news-database
