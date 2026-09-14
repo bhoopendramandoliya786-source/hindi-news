@@ -5,13 +5,14 @@ export type StudentEntity = {
   count: number;
 };
 
+// Words that describe the stage/action, not the actual recruitment, exam,
+// result, scholarship, admission or service being tracked.
 const REMOVE_WORDS = new Set([
   "latest", "new", "out", "released", "release", "notification", "notice",
   "online", "form", "apply", "application", "result", "results", "admit",
   "card", "answer", "key", "syllabus", "exam", "date", "dates", "schedule",
   "recruitment", "bharti", "vacancy", "vacancies", "final", "provisional",
-  "official", "check", "download", "downloadable", "2024", "2025", "2026", "2027",
-  "2028", "2029", "2030", "out", "pdf"
+  "official", "check", "download", "downloadable", "pdf"
 ]);
 
 const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|result|final\s+result|exam\s+date|exam\s+schedule|syllabus|recruitment|notification)\s*[:\-–—|]*/i;
@@ -19,8 +20,9 @@ const ACTION_PREFIX = /^(online\s+form|apply\s+online|admit\s+card|answer\s+key|
 function cleanTitle(title: string) {
   return title
     .replace(ACTION_PREFIX, "")
-    .replace(/[|:–—-]+/g, " ")
-    .replace(/\b(202[4-9]|2030)\b/g, " ")
+    .replace(/[|:–—]+/g, " ")
+    // Keep years/session in the identity. This prevents SSC CGL 2025 and
+    // SSC CGL 2026, or Scholarship 2025-26 and 2026-27, from being merged.
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -30,12 +32,16 @@ export function getStudentEntityName(title: string) {
   const words = clean.split(" ").filter(Boolean);
   const kept: string[] = [];
   for (const word of words) {
-    const normalized = word.toLowerCase().replace(/[^\p{L}\p{N}.]/gu, "");
+    const normalized = word.toLowerCase().replace(/[^\p{L}\p{N}.\-/]/gu, "");
     if (!normalized || REMOVE_WORDS.has(normalized)) continue;
     kept.push(word);
-    if (kept.length >= 7) break;
+    if (kept.length >= 9) break;
   }
-  return (kept.length ? kept.join(" ") : clean || title).trim();
+
+  // Prefer an identity that contains the year/session when the title has one.
+  // The final fallback still works for Hindi-only titles.
+  const identity = (kept.length ? kept.join(" ") : clean || title).trim();
+  return identity.replace(/\s+/g, " ");
 }
 
 export function getStudentEntityKey(title: string, categorySlug = "student-updates") {
