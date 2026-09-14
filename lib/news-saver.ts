@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { fetchAllHindiNews } from "@/lib/news-fetcher";
 import { processNews } from "@/lib/news-processor";
+import { buildStudentIdentity } from "@/lib/student-context";
 
 type ExistingNews = {
   id: string;
@@ -10,6 +11,7 @@ type ExistingNews = {
   content: string | null;
   imageUrl: string | null;
   sourceUrl: string | null;
+  categoryId: string;
 };
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -31,7 +33,9 @@ const CATEGORY_MAP: Record<string, string> = {
 function normalizeTitle(value: string) {
   return value.toLowerCase().replace(/<[^>]*>/g, " ").replace(/https?:\/\/\S+/g, " ").replace(/[^\p{L}\p{N}]+/gu, " ").replace(/\s+/g, " ").trim();
 }
+
 function titleTokens(value: string) { return new Set(normalizeTitle(value).split(" ").filter((token) => token.length >= 2)); }
+
 function titleSimilarity(a: string, b: string) {
   const left = titleTokens(a), right = titleTokens(b);
   if (!left.size || !right.size) return 0;
@@ -42,26 +46,10 @@ function titleSimilarity(a: string, b: string) {
 
 function addWhatIsThisContext(description: string | null, title: string, categorySlug: string) {
   const clean = (description || "").trim();
-  const labels: Record<string, string> = {
-    results: "यह किसका रिजल्ट है?",
-    schemes: "यह किस योजना की जानकारी है?",
-    scholarship: "यह किस छात्रवृत्ति की जानकारी है?",
-    jobs: "यह किस भर्ती की जानकारी है?",
-    exams: "यह किस परीक्षा की जानकारी है?",
-    "admit-card": "यह किस परीक्षा/भर्ती का एडमिट कार्ड है?",
-    "answer-key": "यह किस परीक्षा की आंसर की है?",
-    admission: "यह किस admission/course की जानकारी है?",
-    documents: "यह किस काम के document से जुड़ी जानकारी है?",
-    education: "यह किस शिक्षा/संस्थान से जुड़ी जानकारी है?",
-    "citizen-services": "यह किस नागरिक सेवा से जुड़ी जानकारी है?",
-    "current-affairs": "यह किस student-useful current update की जानकारी है?",
-    "student-updates": "यह किस student update की जानकारी है?",
-  };
-  const label = labels[categorySlug];
-  if (!label) return clean;
-  const context = `${label} ${title.trim()}`;
+  const context = buildStudentIdentity(categorySlug, title);
   if (!clean) return context;
-  if (clean.includes(label)) return clean;
+  const question = context.slice(0, context.indexOf(title.trim()) >= 0 ? context.indexOf(title.trim()) : 0).trim();
+  if (question && clean.includes(question)) return clean;
   return `${context}\n\n${clean}`;
 }
 
@@ -79,13 +67,13 @@ export async function saveIndiaNews() {
 
   const recentTitles: ExistingNews[] = await db.news.findMany({
     where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 1000,
-    select: { id: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true },
+    select: { id: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true },
   });
 
   const externalIds = [...new Set(articles.map((article) => article.externalId))];
   const existingByExternal: ExistingNews[] = externalIds.length ? await db.news.findMany({
     where: { externalId: { in: externalIds } },
-    select: { id: true, externalId: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true },
+    select: { id: true, externalId: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true },
   }) : [];
   const existingMap = new Map(existingByExternal.map((item) => [item.externalId, item]));
 
@@ -100,10 +88,13 @@ export async function saveIndiaNews() {
       if (existing) {
         const currentNormalized = normalizeTitle(existing.title || "");
         const contextualDescription = addWhatIsThisContext(existing.description || article.description, article.title, article.categorySlug);
-        const shouldRefresh = contextualDescription !== (existing.description || "") || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
+        const categoryChanged = existing.categoryId !== categoryId;
+        const shouldRefresh = categoryChanged || contextualDescription !== (existing.description || "") || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
         if (shouldRefresh) {
           const processed = processNews(article, existing.id);
-          await db.news.update({ where: { id: existing.id }, data: { description: contextualDescription || processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
+          await db.news.update({ where: { id: existing.id }, data: { categoryId, description: contextualDescription || processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
+          existing.categoryId = categoryId;
+          existing.description = contextualDescription || processed.description;
           updated++;
         } else skipped++;
         continue;
@@ -115,8 +106,8 @@ export async function saveIndiaNews() {
       const contextualDescription = addWhatIsThisContext(processed.description, processed.title, article.categorySlug);
       try {
         const created = await db.news.create({ data: { title: processed.title, slug: processed.slug, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId, publishedAt: processed.publishedAt || new Date() } });
-        recentTitles.unshift({ id: created.id, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
-        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl });
+        recentTitles.unshift({ id: created.id, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId });
+        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId });
         if (recentTitles.length > 1000) recentTitles.pop();
         saved++;
       } catch (error: any) {
