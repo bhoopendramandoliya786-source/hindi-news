@@ -4,8 +4,8 @@ import { db } from "@/lib/db";
 import { AdsterraNative } from "@/components/AdsterraAds";
 
 export const metadata: Metadata = {
-  title: "भर्ती / परीक्षा Tracker | Student Update",
-  description: "किसी भर्ती, परीक्षा, रिजल्ट, Admit Card, Answer Key या Scholarship को एक ही जगह समझें और अगला काम जानें।",
+  title: "भर्ती / परीक्षा / छात्र Tracker | Student Update",
+  description: "किसी भर्ती, परीक्षा, रिजल्ट, Admit Card, Answer Key, Scholarship, Admission या योजना को एक ही जगह समझें और अगला काम जानें।",
   robots: { index: false, follow: true },
 };
 
@@ -28,6 +28,9 @@ const STAGES: Stage[] = [
   { slug: "answer-key", label: "Answer Key", icon: "04", action: "Answer Key देखें", hint: "उत्तर मिलाएं, response sheet और objection" },
   { slug: "results", label: "Result", icon: "05", action: "Result देखें", hint: "Result, score, merit list, cut-off और अगला चरण" },
   { slug: "admission", label: "Counselling / Admission", icon: "06", action: "Admission चरण देखें", hint: "Merit, counselling, seat allotment और admission" },
+  { slug: "scholarship", label: "Scholarship", icon: "07", action: "Scholarship देखें", hint: "Scheme, session, eligibility, OTR, documents, verification और status" },
+  { slug: "schemes", label: "सरकारी योजना", icon: "08", action: "योजना देखें", hint: "किस विभाग की योजना है, कौन पात्र है और आवेदन/status कैसे देखें" },
+  { slug: "education", label: "Education / Board", icon: "09", action: "Education update देखें", hint: "Board, university, course, academic session और official notice" },
 ];
 
 const clean = (value: string) => value.trim().replace(/\s+/g, " ").slice(0, 100);
@@ -42,10 +45,10 @@ export default async function TrackPage({ searchParams }: Props) {
         <div className="mx-auto max-w-4xl px-4">
           <section className="rounded-3xl bg-white p-6 shadow-sm sm:p-8">
             <div className="text-xs font-black uppercase tracking-wider text-red-600">Master Tracker</div>
-            <h1 className="mt-2 text-3xl font-black text-gray-950">किस भर्ती या परीक्षा को एक जगह ट्रैक करना है?</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600">जैसे <b>SSC CGL</b>, <b>REET</b>, <b>RPSC School Lecturer</b>, <b>RRB NTPC</b>, <b>RBSE 10th Result</b> या किसी Scholarship का नाम लिखें।</p>
+            <h1 className="mt-2 text-3xl font-black text-gray-950">किस भर्ती, परीक्षा, रिजल्ट या छात्र काम को एक जगह ट्रैक करना है?</h1>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600">जैसे <b>SSC CGL</b>, <b>REET</b>, <b>RPSC School Lecturer</b>, <b>RRB NTPC</b>, <b>RBSE 10th Result</b>, <b>Scholarship</b> या किसी सरकारी योजना का नाम लिखें।</p>
             <form className="mt-6 flex flex-col gap-2 sm:flex-row">
-              <input name="q" className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500" placeholder="जैसे: SSC CGL 2026" />
+              <input name="q" className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500" placeholder="जैसे: SSC CGL 2026 / REET / Rajasthan Scholarship" />
               <button className="rounded-xl bg-red-600 px-6 py-3 font-black text-white">Tracker खोलें →</button>
             </form>
           </section>
@@ -65,7 +68,7 @@ export default async function TrackPage({ searchParams }: Props) {
   const updates = await db.news.findMany({
     where: { status: "PUBLISHED", OR: searchOr },
     orderBy: { publishedAt: "desc" },
-    take: 80,
+    take: 100,
     select: { id: true, slug: true, title: true, description: true, sourceName: true, sourceUrl: true, publishedAt: true, category: { select: { name: true, slug: true } } },
   });
 
@@ -82,17 +85,17 @@ export default async function TrackPage({ searchParams }: Props) {
         <section className="mt-4 rounded-3xl bg-white p-6 shadow-sm sm:p-8">
           <div className="text-xs font-black uppercase tracking-wider text-red-600">{activeStages.length ? `${activeStages.length} चरणों में जानकारी मिली` : "Master Tracker"}</div>
           <h1 className="mt-2 text-3xl font-black leading-tight text-gray-950 sm:text-4xl">{query}</h1>
-          <p className="mt-3 max-w-3xl text-sm leading-7 text-gray-600">यहां इस नाम से मिली भर्ती/परीक्षा/रिजल्ट/Admit Card/Answer Key जैसी सभी उपलब्ध updates को एक workflow में रखा गया है। जो चरण अभी नहीं मिला है, उसे अनुमान से “live” नहीं बताया गया है।</p>
+          <p className="mt-3 max-w-3xl text-sm leading-7 text-gray-600">यहां इस नाम से मिली भर्ती, परीक्षा, result, Admit Card, Answer Key, admission, scholarship, scheme और education updates को एक workflow में रखा गया है। जो चरण अभी नहीं मिला है, उसे अनुमान से “live” नहीं बताया गया है।</p>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <div className="rounded-2xl bg-gray-50 p-4"><div className="text-xs font-bold text-gray-500">मिली updates</div><div className="mt-1 text-2xl font-black text-gray-950">{unique.length}</div></div>
             <div className="rounded-2xl bg-gray-50 p-4"><div className="text-xs font-bold text-gray-500">मिले हुए चरण</div><div className="mt-1 text-2xl font-black text-gray-950">{activeStages.length}</div></div>
-            <div className="rounded-2xl bg-red-50 p-4"><div className="text-xs font-bold text-red-700">आपका अगला काम</div><div className="mt-1 text-sm font-black text-red-800">नीचे सबसे नया उपलब्ध चरण खोलें</div></div>
+            <div className="rounded-2xl bg-red-50 p-4"><div className="text-xs font-bold text-red-700">आपका अगला काम</div><div className="mt-1 text-sm font-black text-red-800">सबसे नया उपलब्ध चरण खोलें</div></div>
           </div>
         </section>
 
         <section className="mt-6 rounded-3xl border border-red-100 bg-red-50 p-5 sm:p-6">
           <div className="text-xs font-black uppercase tracking-wider text-red-600">अभी क्या करें?</div>
-          <h2 className="mt-1 text-xl font-black text-gray-950">पहले सबसे ऊपर वाला उपलब्ध चरण देखें</h2>
+          <h2 className="mt-1 text-xl font-black text-gray-950">पहले सबसे नया उपलब्ध चरण देखें</h2>
           <div className="mt-4 flex flex-wrap gap-2">
             {(activeStages.length ? activeStages : stageData).slice().reverse().slice(0, 3).map((stage) => (
               <Link key={stage.slug} href={stage.items[0] ? `/news/${stage.items[0].slug}` : `/category/${stage.slug}`} className="rounded-xl bg-red-600 px-4 py-3 text-sm font-black text-white hover:bg-red-700">{stage.action} →</Link>
@@ -101,8 +104,8 @@ export default async function TrackPage({ searchParams }: Props) {
         </section>
 
         <section className="mt-7">
-          <h2 className="text-2xl font-black text-gray-950">पूरा भर्ती / परीक्षा workflow</h2>
-          <p className="mt-1 text-sm text-gray-500">हर चरण में वही official update दिखाया गया है जो इस search से मिला है।</p>
+          <h2 className="text-2xl font-black text-gray-950">पूरा workflow</h2>
+          <p className="mt-1 text-sm text-gray-500">हर चरण में वही published update दिखाया गया है जो इस search से मिला है।</p>
           <div className="mt-5 space-y-4">
             {stageData.map((stage) => (
               <section key={stage.slug} className={`rounded-3xl border bg-white p-5 shadow-sm ${stage.items.length ? "border-gray-100" : "border-dashed border-gray-200"}`}>
@@ -127,7 +130,7 @@ export default async function TrackPage({ searchParams }: Props) {
         <section className="mt-7 rounded-3xl bg-gray-950 p-6 text-white sm:p-8">
           <div className="text-xs font-black uppercase tracking-wider text-red-300">Final official action</div>
           <h2 className="mt-2 text-2xl font-black">काम पूरा करने के लिए official source ही इस्तेमाल करें</h2>
-          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">यह portal आपको समझाता और सही चरण तक पहुंचाता है। आवेदन, admit card, objection, result या status का अंतिम काम संबंधित सरकारी website पर ही करें और वहां details दोबारा verify करें।</p>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-gray-300">यह portal आपको समझाता और सही चरण तक पहुंचाता है। आवेदन, admit card, objection, result, scholarship application, admission या status का अंतिम काम संबंधित सरकारी website पर ही करें और वहां details दोबारा verify करें।</p>
           <Link href={`/search?q=${encodeURIComponent(query)}`} className="mt-5 inline-flex rounded-xl bg-white px-5 py-3 text-sm font-black text-gray-950">सभी matching updates देखें →</Link>
         </section>
       </div>
