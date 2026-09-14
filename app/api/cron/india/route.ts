@@ -22,8 +22,10 @@ function revalidateStudentPages() {
   revalidatePath("/");
   revalidatePath("/latest");
   revalidatePath("/search");
+  revalidatePath("/track");
   revalidatePath("/category/[slug]", "page");
-  revalidatePath("/student-work/[slug]", "page");
+  revalidatePath("/student-work/[key]", "page");
+  revalidatePath("/news/[id]", "page");
   revalidatePath("/sitemap.xml");
   revalidatePath("/news-sitemap.xml");
 }
