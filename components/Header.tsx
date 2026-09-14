@@ -5,6 +5,7 @@ import { useState } from "react";
 
 const navigation = [
   { name: "होम", href: "/" },
+  { name: "Latest", href: "/latest" },
   { name: "सरकारी नौकरी", href: "/category/jobs" },
   { name: "परीक्षा", href: "/category/exams" },
   { name: "एडमिट कार्ड", href: "/category/admit-card" },
@@ -32,6 +33,7 @@ export default function Header() {
             <button className="rounded-r-lg bg-gray-950 px-4 text-sm font-bold">काम खोजें</button>
           </form>
           <div className="hidden items-center gap-2 sm:flex">
+            <Link href="/latest" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">Latest</Link>
             <Link href="/search" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">🔎</Link>
             <Link href="/track" className="rounded-lg border border-white px-3 py-2 text-sm font-bold">Tracker</Link>
             <Link href="/category/jobs" className="rounded-lg bg-white px-3 py-2 text-sm font-bold text-red-700">नौकरी</Link>
