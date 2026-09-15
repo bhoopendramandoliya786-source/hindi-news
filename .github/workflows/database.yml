@@ -15,7 +15,7 @@ concurrency:
 jobs:
   database:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 12
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,7 +33,17 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
       - name: Fetch and publish fresh official student updates
-        run: npm run fetch:news
+        run: |
+          for attempt in 1 2 3; do
+            echo "Automatic official sync attempt ${attempt}/3"
+            if npm run fetch:news; then
+              echo "Automatic official sync completed"
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Automatic official sync failed after 3 attempts"
+          exit 1
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           DIRECT_URL: ${{ secrets.DIRECT_URL }}
