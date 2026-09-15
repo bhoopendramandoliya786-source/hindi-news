@@ -6,15 +6,22 @@ export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
-  const [categories, news] = await Promise.all([
-    db.category.findMany({ select: { slug: true, updatedAt: true } }),
-    db.news.findMany({
-      where: { status: "PUBLISHED" },
-      select: { slug: true, title: true, category: { select: { slug: true } }, updatedAt: true, publishedAt: true },
-      orderBy: { publishedAt: "desc" },
-      take: 20000,
-    }),
-  ]);
+  let categories: any[] = [];
+  let news: any[] = [];
+
+  try {
+    [categories, news] = await Promise.all([
+      db.category.findMany({ select: { slug: true, updatedAt: true } }),
+      db.news.findMany({
+        where: { status: "PUBLISHED" },
+        select: { slug: true, title: true, category: { select: { slug: true } }, updatedAt: true, publishedAt: true },
+        orderBy: { publishedAt: "desc" },
+        take: 20000,
+      }),
+    ]);
+  } catch (error) {
+    console.error("Sitemap database read failed:", error);
+  }
 
   const entityMap = new Map<string, Date>();
   for (const item of news) {
