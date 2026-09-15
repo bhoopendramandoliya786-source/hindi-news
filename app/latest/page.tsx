@@ -26,12 +26,20 @@ const GROUPS = [
 ] as const;
 
 export default async function LatestPage() {
-  const items = await db.news.findMany({
-    where: { status: "PUBLISHED" },
-    orderBy: { publishedAt: "desc" },
-    take: 120,
-    select: { id: true, slug: true, title: true, description: true, sourceName: true, publishedAt: true, createdAt: true, category: { select: { name: true, slug: true } } },
-  });
+  let items: any[] = [];
+  let dbError = false;
+
+  try {
+    items = await db.news.findMany({
+      where: { status: "PUBLISHED" },
+      orderBy: { publishedAt: "desc" },
+      take: 120,
+      select: { id: true, slug: true, title: true, description: true, sourceName: true, publishedAt: true, createdAt: true, category: { select: { name: true, slug: true } } },
+    });
+  } catch (error) {
+    dbError = true;
+    console.error("Latest page database read failed:", error);
+  }
 
   const grouped = new Map(GROUPS.map(([slug]) => [slug, items.filter(item => item.category.slug === slug).slice(0, 10)]));
   const latest = items.slice(0, 30);
@@ -46,6 +54,8 @@ export default async function LatestPage() {
           <p className="mt-3 max-w-3xl text-sm leading-7 text-red-50 sm:text-base">India-style latest hub: नौकरी, परीक्षा, Admit Card, Answer Key, Result, Scholarship, Admission और Education को अलग-अलग साफ हिस्सों में देखें। हर update में पहले यह पहचानें कि वह किस भर्ती, परीक्षा, योजना या course का है।</p>
           <div className="mt-5 flex flex-wrap gap-2">{GROUPS.map(([slug, label]) => <Link key={slug} href={`#${slug}`} className="rounded-full bg-white/10 px-3 py-2 text-xs font-black hover:bg-white/20">{label}</Link>)}</div>
         </section>
+
+        {dbError && <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><b>Live updates अभी अस्थायी रूप से उपलब्ध नहीं हैं।</b> Page 500 पर नहीं गिरेगा। Automatic official sync/database ठीक होते ही latest items फिर अपने आप दिखेंगे।</section>}
 
         <section className="mt-7 rounded-2xl border border-red-100 bg-red-50 p-5">
           <p className="text-xs font-black uppercase tracking-wider text-red-600">सबसे पहले</p>
