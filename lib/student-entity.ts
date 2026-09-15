@@ -1,3 +1,5 @@
+import { buildEntityKey } from "@/lib/entity-key";
+
 export type StudentEntity = {
   key: string;
   name: string;
@@ -5,9 +7,8 @@ export type StudentEntity = {
   count: number;
 };
 
-// Stage/action words are removed so the same recruitment/exam/scholarship
-// remains one master entity across notification -> admit card -> answer key -> result.
-// Keep year/session because 2025 and 2026 (or 2025-26 and 2026-27) are different entities.
+// Stage/action words are removed from the visible name so the same
+// recruitment/exam/scholarship stays one master entity across its lifecycle.
 const REMOVE_WORDS = new Set([
   "latest", "new", "out", "released", "release", "notification", "notice",
   "online", "form", "apply", "application", "result", "results", "admit",
@@ -42,11 +43,9 @@ export function getStudentEntityName(title: string) {
   return (kept.length ? kept.join(" ") : clean || title).trim().replace(/\s+/g, " ");
 }
 
+/** New master URLs use the same canonical key saved by news-saver. */
 export function getStudentEntityKey(title: string, _categorySlug = "student-updates") {
-  const name = getStudentEntityName(title);
-  const ascii = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-  if (ascii) return `work-${ascii}`;
-  return `work-${encodeURIComponent(name).replace(/%/g, "-")}`.slice(0, 180);
+  return `work-${buildEntityKey(title)}`;
 }
 
 export function buildStudentEntities(items: { title: string }[], categorySlug: string): StudentEntity[] {
