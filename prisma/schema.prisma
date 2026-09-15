@@ -104,8 +104,9 @@ model SiteSettings {
   websiteUrl      String?
   facebookUrl     String?
   instagramUrl    String?
-  youtubeUrl     String?
+  youtubeUrl      String?
   breakingEnabled Boolean  @default(true)
+  lastSyncAt      DateTime?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 }
