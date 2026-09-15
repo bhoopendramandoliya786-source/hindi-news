@@ -5,8 +5,8 @@ on:
   push:
     branches: [main]
   schedule:
-    # Check official sources frequently; GitHub may delay scheduled runs during load.
-    - cron: "*/10 * * * *"
+    # Poll official sources every 5 minutes; GitHub may delay scheduled runs during load.
+    - cron: "*/5 * * * *"
 
 concurrency:
   group: news-database
