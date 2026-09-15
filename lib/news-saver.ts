@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { fetchAllHindiNews } from "@/lib/news-fetcher";
 import { processNews } from "@/lib/news-processor";
 import { buildStudentIdentity } from "@/lib/student-context";
+import { buildEntityKey } from "@/lib/entity-key";
 
 type ExistingNews = {
   id: string;
@@ -12,6 +13,7 @@ type ExistingNews = {
   imageUrl: string | null;
   sourceUrl: string | null;
   categoryId: string;
+  entityKey: string | null;
 };
 
 const CATEGORY_MAP: Record<string, string> = {
@@ -67,13 +69,13 @@ export async function saveIndiaNews() {
 
   const recentTitles: ExistingNews[] = await db.news.findMany({
     where: { status: "PUBLISHED" }, orderBy: { publishedAt: "desc" }, take: 1000,
-    select: { id: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true },
+    select: { id: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true, entityKey: true },
   });
 
   const externalIds = [...new Set(articles.map((article) => article.externalId))];
   const existingByExternal: ExistingNews[] = externalIds.length ? await db.news.findMany({
     where: { externalId: { in: externalIds } },
-    select: { id: true, externalId: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true },
+    select: { id: true, externalId: true, title: true, description: true, content: true, imageUrl: true, sourceUrl: true, categoryId: true, entityKey: true },
   }) : [];
   const existingMap = new Map(existingByExternal.map((item) => [item.externalId, item]));
 
@@ -82,6 +84,7 @@ export async function saveIndiaNews() {
       const categoryId = categoryCache[article.categorySlug];
       if (!categoryId) continue;
       const normalized = normalizeTitle(article.title);
+      const entityKey = buildEntityKey(article.title, article.sourceName);
       let existing: ExistingNews | undefined = existingMap.get(article.externalId);
       if (!existing) existing = recentTitles.find((item) => item.title === article.title);
 
@@ -89,11 +92,13 @@ export async function saveIndiaNews() {
         const currentNormalized = normalizeTitle(existing.title || "");
         const contextualDescription = addWhatIsThisContext(existing.description || article.description, article.title, article.categorySlug);
         const categoryChanged = existing.categoryId !== categoryId;
-        const shouldRefresh = categoryChanged || contextualDescription !== (existing.description || "") || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
+        const entityChanged = existing.entityKey !== entityKey;
+        const shouldRefresh = categoryChanged || entityChanged || contextualDescription !== (existing.description || "") || (!existing.imageUrl && !!article.imageUrl) || (!existing.content && !!article.description) || (!currentNormalized && !!normalized) || (!existing.sourceUrl && !!article.sourceUrl);
         if (shouldRefresh) {
           const processed = processNews(article, existing.id);
-          await db.news.update({ where: { id: existing.id }, data: { categoryId, description: contextualDescription || processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
+          await db.news.update({ where: { id: existing.id }, data: { categoryId, entityKey, description: contextualDescription || processed.description, content: processed.content, imageUrl: processed.imageUrl || existing.imageUrl, sourceUrl: processed.sourceUrl || existing.sourceUrl, sourceName: processed.sourceName || undefined } });
           existing.categoryId = categoryId;
+          existing.entityKey = entityKey;
           existing.description = contextualDescription || processed.description;
           updated++;
         } else skipped++;
@@ -105,9 +110,9 @@ export async function saveIndiaNews() {
       const processed = processNews(article, `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
       const contextualDescription = addWhatIsThisContext(processed.description, processed.title, article.categorySlug);
       try {
-        const created = await db.news.create({ data: { title: processed.title, slug: processed.slug, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId, publishedAt: processed.publishedAt || new Date() } });
-        recentTitles.unshift({ id: created.id, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId });
-        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId });
+        const created = await db.news.create({ data: { title: processed.title, slug: processed.slug, entityKey, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId: processed.externalId, language: "HI", status: "PUBLISHED", categoryId, publishedAt: processed.publishedAt || new Date() } });
+        recentTitles.unshift({ id: created.id, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId, entityKey });
+        existingMap.set(processed.externalId, { id: created.id, externalId: processed.externalId, title: processed.title, description: contextualDescription, content: processed.content, imageUrl: processed.imageUrl, sourceUrl: processed.sourceUrl, categoryId, entityKey });
         if (recentTitles.length > 1000) recentTitles.pop();
         saved++;
       } catch (error: any) {
@@ -117,9 +122,5 @@ export async function saveIndiaNews() {
     } catch (error) { console.error(`Unable to save: ${article.title}`, error); }
   }
 
-  // Central/official monitoring is intentionally orchestrated by
-  // scripts/fetch-news.ts. Keeping it here as well caused every scheduled run
-  // to fetch and process the central sources twice, increasing database load
-  // and duplicate-write contention.
   return { fetched: articles.length, saved, skipped, updated };
 }
