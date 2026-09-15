@@ -1,0 +1,26 @@
+name: Site Health Monitor
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/15 * * * *"
+
+concurrency:
+  group: site-health
+  cancel-in-progress: true
+
+jobs:
+  health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check database health
+        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/api/health
+      - name: Check homepage
+        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/
+      - name: Check latest page
+        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/latest
+      - name: Check search page
+        run: curl --fail --silent --show-error --max-time 20 "https://education-platform1.vercel.app/search?q=SSC"
+      - name: Check tracker
+        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/track
