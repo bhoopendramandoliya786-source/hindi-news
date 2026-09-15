@@ -4,6 +4,7 @@ import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import Analytics from "@/components/Analytics";
 import { AdSenseScript } from "@/components/AdSense";
+import { AdsterraBanner, AdsterraSocialBar } from "@/components/AdsterraAds";
 
 const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || "Student Update";
@@ -24,5 +25,5 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const organization = { "@context": "https://schema.org", "@type": "Organization", name: siteName, url: siteUrl };
   const website = { "@context": "https://schema.org", "@type": "WebSite", name: siteName, url: siteUrl, potentialAction: { "@type": "SearchAction", target: `${siteUrl}/search?q={search_term_string}`, "query-input": "required name=search_term_string" } };
-  return <html lang="hi"><head><meta name="google-site-verification" content="mjwnFJ_8h6tNf1HgsE9WVZyprx1aqlRsJQhA8DExR0s" /></head><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }} /><AdSenseScript/><Analytics/><Header/>{children}<Footer/></body></html>;
+  return <html lang="hi"><head><meta name="google-site-verification" content="mjwnFJ_8h6tNf1HgsE9WVZyprx1aqlRsJQhA8DExR0s" /></head><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(organization) }} /><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(website) }} /><AdSenseScript/><Analytics/><Header/><div className="mx-auto w-full max-w-7xl px-4 pt-3 sm:pt-4"><AdsterraBanner /></div>{children}<Footer/><AdsterraSocialBar/></body></html>;
 }
