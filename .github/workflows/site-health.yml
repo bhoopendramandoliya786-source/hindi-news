@@ -15,12 +15,12 @@ jobs:
     timeout-minutes: 3
     steps:
       - name: Check database health
-        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/api/health
+        run: curl --fail --silent --show-error --max-time 20 https://hindi-news-omega.vercel.app/api/health
       - name: Check homepage
-        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/
+        run: curl --fail --silent --show-error --max-time 20 https://hindi-news-omega.vercel.app/
       - name: Check latest page
-        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/latest
+        run: curl --fail --silent --show-error --max-time 20 https://hindi-news-omega.vercel.app/latest
       - name: Check search page
-        run: curl --fail --silent --show-error --max-time 20 "https://education-platform1.vercel.app/search?q=SSC"
+        run: curl --fail --silent --show-error --max-time 20 "https://hindi-news-omega.vercel.app/search?q=SSC"
       - name: Check tracker
-        run: curl --fail --silent --show-error --max-time 20 https://education-platform1.vercel.app/track
+        run: curl --fail --silent --show-error --max-time 20 https://hindi-news-omega.vercel.app/track
