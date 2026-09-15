@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import AdSlot from "@/components/AdSense";
 import { AdsterraBanner, AdsterraNative } from "@/components/AdsterraAds";
+import AutoSystemBadge from "@/components/AutoSystemBadge";
 import { getStudentEntityKey } from "@/lib/student-entity";
 
 const TASKS = [
@@ -31,6 +32,7 @@ function dateText(value: Date | string | null | undefined) {
 export default async function StudentPortalHome() {
   let latest: any[] = [];
   let categories: any[] = [];
+  let dbError = false;
 
   try {
     [latest, categories] = await Promise.all([
@@ -38,6 +40,7 @@ export default async function StudentPortalHome() {
       db.category.findMany({ orderBy: { name: "asc" }, select: { name: true, slug: true, _count: { select: { news: { where: { status: "PUBLISHED" } } } } } }),
     ]);
   } catch (error) {
+    dbError = true;
     console.error("Student Update homepage database read failed:", error);
   }
 
@@ -49,7 +52,10 @@ export default async function StudentPortalHome() {
       <h1 className="mt-4 max-w-4xl text-3xl font-black leading-tight sm:text-5xl">खबर नहीं — आपका पूरा सरकारी काम</h1>
       <p className="mt-4 max-w-4xl text-sm leading-7 text-red-50 sm:text-base">भर्ती, परीक्षा, Admit Card, Answer Key, Result, Scholarship, Admission और सरकारी सेवाओं को exact काम के हिसाब से खोजें। पहले जानकारी समझें, फिर documents/eligibility देखें और अंत में official website पर काम करें।</p>
       <div className="mt-6 flex flex-wrap gap-3"><Link href="/track" className="rounded-xl bg-white px-5 py-3 text-sm font-black text-red-800">Recruitment / Exam Tracker →</Link><Link href="/search" className="rounded-xl bg-white/15 px-5 py-3 text-sm font-black ring-1 ring-white/30">अपना काम खोजें</Link><Link href="/category/jobs" className="rounded-xl bg-white/15 px-5 py-3 text-sm font-black ring-1 ring-white/30">आज की नौकरी</Link></div>
+      <AutoSystemBadge />
     </section>
+
+    {dbError && <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><b>Live database अभी अस्थायी रूप से उपलब्ध नहीं है।</b> Website बंद नहीं होगी। Automatic official sync/database ठीक होते ही latest data अपने आप फिर दिखेगा। <Link href="/search" className="font-black underline">Search खोलें</Link></section>}
 
     <section className="mt-6 rounded-3xl border border-red-100 bg-white p-5 shadow-sm sm:p-6"><p className="text-xs font-black uppercase tracking-wider text-red-600">अभी क्या करना है?</p><h2 className="mt-1 text-2xl font-black text-gray-950">अपना काम चुनें</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"><Link href="/category/jobs" className="rounded-2xl bg-red-50 p-4"><b>📝 आवेदन करना है</b><p className="mt-1 text-xs text-gray-600">नई भर्ती और form</p></Link><Link href="/category/admit-card" className="rounded-2xl bg-blue-50 p-4"><b>🎫 Admit Card चाहिए</b><p className="mt-1 text-xs text-gray-600">Exam/Recruitment पहचानें</p></Link><Link href="/category/results" className="rounded-2xl bg-green-50 p-4"><b>🏆 Result देखना है</b><p className="mt-1 text-xs text-gray-600">Exam/Recruitment के अनुसार</p></Link><Link href="/category/scholarship" className="rounded-2xl bg-yellow-50 p-4"><b>🎓 Scholarship चाहिए</b><p className="mt-1 text-xs text-gray-600">Scheme + session + status</p></Link></div></section>
 
