@@ -13,6 +13,37 @@ const TASKS = [
 ] as const;
 const QUICK_SEARCHES = [["SSC", "SSC की भर्ती, परीक्षा, admit card और result"], ["UPSC", "UPSC की परीक्षा और recruitment updates"], ["Railway RRB", "Railway/RRB भर्ती, परीक्षा और result"], ["RPSC", "RPSC Rajasthan recruitment और exam updates"], ["RSSB", "RSSB/RSMSSB भर्ती और परीक्षा updates"], ["RBSE", "RBSE board result, exam और education updates"], ["Scholarship", "Scholarship और student financial support"], ["Admission", "College, university और course admission"]] as const;
 
+const SEARCH_ALIASES: Record<string, string[]> = {
+  anuprati: ["अनुप्रति", "anuprati", "coaching"],
+  nupriti: ["अनुप्रति", "anuprati", "coaching"],
+  anurprati: ["अनुप्रति", "anuprati", "coaching"],
+  ssc: ["ssc", "staff selection commission"],
+  rpsc: ["rpsc", "rajasthan public service commission"],
+  rssb: ["rssb", "rsmssb", "rajasthan staff selection board"],
+  rbse: ["rbse", "board of secondary education rajasthan", "माध्यमिक शिक्षा बोर्ड"],
+  reet: ["reet", "राजस्थान शिक्षक पात्रता"],
+  ntpc: ["ntpc", "railway"],
+  railway: ["railway", "rrb"],
+  scholarship: ["scholarship", "छात्रवृत्ति", "स्कॉलरशिप"],
+  छात्रवृत्ति: ["scholarship", "छात्रवृत्ति", "स्कॉलरशिप"],
+  result: ["result", "परिणाम", "रिजल्ट"],
+  रिजल्ट: ["result", "परिणाम", "रिजल्ट"],
+  admit: ["admit", "प्रवेश पत्र", "admit card"],
+  "admit card": ["admit", "प्रवेश पत्र", "admit card"],
+};
+
+function expandQuery(value: string) {
+  const normalized = value.toLowerCase().replace(/\s+/g, " ").trim();
+  const aliases = new Set<string>([normalized]);
+  for (const token of normalized.split(" ")) {
+    for (const alias of SEARCH_ALIASES[token] || []) aliases.add(alias);
+  }
+  for (const [key, values] of Object.entries(SEARCH_ALIASES)) {
+    if (normalized.includes(key)) values.forEach((alias) => aliases.add(alias));
+  }
+  return [...aliases].filter(Boolean).slice(0, 12);
+}
+
 export default async function SearchPage({ searchParams }: Props) {
   const { q = "" } = await searchParams;
   const query = q.trim().slice(0, 100);
@@ -20,16 +51,26 @@ export default async function SearchPage({ searchParams }: Props) {
   let dbError = false;
   if (query) {
     try {
-      results = await db.news.findMany({ where: { status: "PUBLISHED", OR: [{ title: { contains: query, mode: "insensitive" } }, { description: { contains: query, mode: "insensitive" } }, { content: { contains: query, mode: "insensitive" } }] }, orderBy: { publishedAt: "desc" }, take: 50, select: { id: true, slug: true, title: true, description: true, imageUrl: true, sourceName: true, category: { select: { name: true, slug: true } } } });
+      const variants = expandQuery(query);
+      const words = query.split(/\s+/).filter((word) => word.length >= 3).slice(0, 6);
+      const clauses = [
+        ...variants.flatMap((term) => [
+          { title: { contains: term, mode: "insensitive" as const } },
+          { description: { contains: term, mode: "insensitive" as const } },
+          { content: { contains: term, mode: "insensitive" as const } },
+        ]),
+        ...words.map((word) => ({ title: { contains: word, mode: "insensitive" as const } })),
+      ];
+      results = await db.news.findMany({ where: { status: "PUBLISHED", OR: clauses }, orderBy: { publishedAt: "desc" }, take: 50, select: { id: true, slug: true, title: true, description: true, imageUrl: true, sourceName: true, category: { select: { name: true, slug: true } } } });
     } catch (error) {
       dbError = true;
       console.error("Student search database read failed:", error);
     }
   }
   return <main className="min-h-screen bg-gray-50 py-8"><div className="mx-auto max-w-5xl px-4">
-    <section className="rounded-3xl bg-white p-5 shadow-sm sm:p-7"><div className="text-xs font-black uppercase tracking-wider text-red-600">Student Action Search</div><h1 className="mt-1 text-2xl font-black text-gray-950 sm:text-3xl">अपना सरकारी काम या student update खोजें</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">खबर के बजाय वह काम खोजें जो आपको करना है—जैसे REET Admit Card, SSC CGL Result, RPSC भर्ती, RBSE Result या Scholarship।</p><form className="mt-5 flex flex-col gap-2 sm:flex-row" role="search"><input name="q" defaultValue={query} maxLength={100} placeholder="जैसे: REET एडमिट कार्ड, SSC CGL रिजल्ट, RPSC भर्ती, RBSE रिजल्ट" aria-label="Student काम खोजें" className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500" /><button className="rounded-xl bg-red-600 px-6 py-3 font-black text-white hover:bg-red-700">काम खोजें</button></form>{query && <div className="mt-4 flex flex-wrap gap-2"><Link href={`/track?q=${encodeURIComponent(query)}`} className="rounded-xl bg-gray-950 px-4 py-2.5 text-xs font-black text-white hover:bg-gray-800">इस भर्ती / परीक्षा का पूरा Tracker खोलें →</Link><span className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-600">Notification → Exam → Admit Card → Answer Key → Result</span></div>}</section>
+    <section className="rounded-3xl bg-white p-5 shadow-sm sm:p-7"><div className="text-xs font-black uppercase tracking-wider text-red-600">Student Action Search</div><h1 className="mt-1 text-2xl font-black text-gray-950 sm:text-3xl">अपना सरकारी काम या student update खोजें</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-gray-600">खबर के बजाय वह काम खोजें जो आपको करना है—जैसे REET Admit Card, SSC CGL Result, RPSC भर्ती, RBSE Result या Scholarship। नाम हिंदी, English या आम बोलचाल के शब्दों में लिखें।</p><form className="mt-5 flex flex-col gap-2 sm:flex-row" role="search"><input name="q" defaultValue={query} maxLength={100} placeholder="जैसे: अनुप्रति कोचिंग, REET एडमिट कार्ड, SSC CGL रिजल्ट" aria-label="Student काम खोजें" className="min-w-0 flex-1 rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-red-500" /><button className="rounded-xl bg-red-600 px-6 py-3 font-black text-white hover:bg-red-700">काम खोजें</button></form>{query && <div className="mt-4 flex flex-wrap gap-2"><Link href={`/track?q=${encodeURIComponent(query)}`} className="rounded-xl bg-gray-950 px-4 py-2.5 text-xs font-black text-white hover:bg-gray-800">इस भर्ती / परीक्षा का पूरा Tracker खोलें →</Link><span className="rounded-xl bg-gray-100 px-4 py-2.5 text-xs font-bold text-gray-600">Notification → Exam → Admit Card → Answer Key → Result</span></div>}</section>
     {dbError && <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><b>Live database अभी उपलब्ध नहीं है।</b> Search टूटेगा नहीं; database/sync वापस आते ही results अपने आप दिखेंगे।</section>}
     {!query && <><section className="mt-6"><h2 className="text-xl font-black text-gray-950">किस काम की जानकारी चाहिए?</h2><div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{TASKS.map(([slug, label, desc]) => <Link key={slug} href={`/category/${slug}`} prefetch className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-red-200"><div className="font-black text-gray-950">{label} →</div><div className="mt-1 text-xs leading-5 text-gray-500">{desc}</div></Link>)}</div></section><section className="mt-7 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"><p className="text-xs font-black uppercase tracking-wider text-red-600">Exam / Organisation wise</p><h2 className="mt-1 text-xl font-black text-gray-950">किस संस्था या exam का update चाहिए?</h2><div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{QUICK_SEARCHES.map(([term, desc]) => <Link key={term} href={`/search?q=${encodeURIComponent(term)}`} className="rounded-xl bg-gray-50 p-3 hover:bg-red-50"><div className="font-black text-gray-900">{term}</div><div className="mt-1 text-xs leading-5 text-gray-500">{desc}</div></Link>)}</div></section></>}
-    {query && <><div className="mb-4 mt-7 flex items-end justify-between gap-3"><div><div className="text-xs font-bold uppercase tracking-wider text-red-600">Search results</div><h2 className="text-xl font-black text-gray-950">“{query}” के लिए {results.length} updates</h2></div><Link href="/search" prefetch className="text-xs font-bold text-red-600">नई खोज</Link></div><div className="space-y-4">{results.map((item) => <article key={item.id} className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"><Link href={`/news/${item.slug}`} prefetch className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:h-28 sm:w-36">{item.imageUrl ? <Image src={item.imageUrl} alt={item.title} fill sizes="144px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-center text-xs font-bold text-red-600">Student<br/>Update</div>}</Link><div className="min-w-0 flex-1"><Link href={`/category/${item.category.slug}`} prefetch className="text-xs font-black text-red-600">{item.category.name}</Link><Link href={`/news/${item.slug}`} prefetch><h3 className="mt-1 font-black leading-snug text-gray-950 hover:text-red-600">{item.title}</h3></Link><p className="mt-1 line-clamp-2 text-sm leading-6 text-gray-500">{item.description || "Official source पर आधारित student action information."}</p><div className="mt-3 flex flex-wrap items-center gap-2"><span className="text-[11px] text-gray-400">Official: {item.sourceName || "Source"}</span><Link href={`/news/${item.slug}`} prefetch className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">पूरा काम देखें →</Link></div></div></article>)}</div><AdsterraNative />{results.length === 0 && <section className="mt-4 rounded-2xl bg-white p-8 text-center shadow-sm"><h3 className="font-black text-gray-900">इस search से exact update नहीं मिला</h3><p className="mt-2 text-sm text-gray-500">नीचे दिए student task में जाकर related official updates देखें।</p><div className="mt-4 flex flex-wrap justify-center gap-2">{TASKS.slice(0, 8).map(([slug, label]) => <Link key={slug} href={`/category/${slug}`} prefetch className="rounded-full bg-red-50 px-4 py-2 text-sm font-bold text-red-700">{label}</Link>)}</div></section>}</>}
+    {query && <><div className="mb-4 mt-7 flex items-end justify-between gap-3"><div><div className="text-xs font-bold uppercase tracking-wider text-red-600">Search results</div><h2 className="text-xl font-black text-gray-950">“{query}” के लिए {results.length} updates</h2></div><Link href="/search" prefetch className="text-xs font-bold text-red-600">नई खोज</Link></div><div className="space-y-4">{results.map((item) => <article key={item.id} className="flex gap-4 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm"><Link href={`/news/${item.slug}`} prefetch className="relative h-24 w-28 shrink-0 overflow-hidden rounded-xl bg-gray-100 sm:h-28 sm:w-36">{item.imageUrl ? <Image src={item.imageUrl} alt={item.title} fill sizes="144px" className="object-cover" /> : <div className="flex h-full items-center justify-center text-center text-xs font-bold text-red-600">Student<br/>Update</div>}</Link><div className="min-w-0 flex-1"><Link href={`/category/${item.category.slug}`} prefetch className="text-xs font-black text-red-600">{item.category.name}</Link><Link href={`/news/${item.slug}`} prefetch><h3 className="mt-1 font-black leading-snug text-gray-950 hover:text-red-600">{item.title}</h3></Link><p className="mt-1 line-clamp-2 text-sm leading-6 text-gray-500">{item.description || "Official source पर आधारित student action information."}</p><div className="mt-3 flex flex-wrap items-center gap-2"><span className="text-[11px] text-gray-400">Official: {item.sourceName || "Source"}</span><Link href={`/news/${item.slug}`} prefetch className="rounded-lg bg-red-600 px-3 py-2 text-xs font-bold text-white">पूरा काम देखें →</Link></div></div></article>)}</div><AdsterraNative />{results.length === 0 && <section className="mt-4 rounded-2xl bg-white p-8 text-center shadow-sm"><h3 className="font-black text-gray-900">इस search से exact update नहीं मिला</h3><p className="mt-2 text-sm text-gray-500">शब्द बदलकर देखें—जैसे “अनुप्रति”, “REET”, “RPSC”, “RBSE”, “SSC CGL”, “स्कॉलरशिप”—या नीचे student task में जाएं।</p><div className="mt-4 flex flex-wrap justify-center gap-2">{TASKS.slice(0, 8).map(([slug, label]) => <Link key={slug} href={`/category/${slug}`} prefetch className="rounded-full bg-red-50 px-4 py-2 text-sm font-bold text-red-700">{label}</Link>)}</div></section>}</>}
   </div></main>;
 }
