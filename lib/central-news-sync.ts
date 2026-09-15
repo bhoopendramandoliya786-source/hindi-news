@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import { processNews } from "@/lib/news-processor";
+import { buildEntityKey } from "@/lib/entity-key";
 
 type Source = { url: string; source: string; fallback: string; keywords: string[] };
 
@@ -102,8 +103,9 @@ export async function syncCentralOfficialNews() {
     const externalId = `central:${article.url}`.slice(0, 900);
     const category = await db.category.findUnique({ where: { slug: article.categorySlug }, select: { id: true } });
     if (!category) continue;
+    const entityKey = buildEntityKey(article.title, article.source);
 
-    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true, title: true, description: true, content: true, categoryId: true, publishedAt: true } });
+    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true, title: true, description: true, content: true, categoryId: true, entityKey: true, publishedAt: true } });
     const processed = processNews(
       {
         title: article.title,
@@ -119,15 +121,15 @@ export async function syncCentralOfficialNews() {
     );
 
     if (existing) {
-      const changed = existing.title !== processed.title || existing.description !== processed.description || existing.content !== processed.content || existing.categoryId !== category.id;
+      const changed = existing.title !== processed.title || existing.description !== processed.description || existing.content !== processed.content || existing.categoryId !== category.id || existing.entityKey !== entityKey;
       if (!changed) { skipped++; continue; }
-      await db.news.update({ where: { id: existing.id }, data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, categoryId: category.id, status: "PUBLISHED", publishedAt: existing.publishedAt || processed.publishedAt || new Date() } });
+      await db.news.update({ where: { id: existing.id }, data: { title: processed.title, slug: processed.slug, entityKey, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, categoryId: category.id, status: "PUBLISHED", publishedAt: existing.publishedAt || processed.publishedAt || new Date() } });
       updated++;
       continue;
     }
 
     try {
-      await db.news.create({ data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId, language: "HI", status: "PUBLISHED", categoryId: category.id, publishedAt: processed.publishedAt || new Date() } });
+      await db.news.create({ data: { title: processed.title, slug: processed.slug, entityKey, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, externalId, language: "HI", status: "PUBLISHED", categoryId: category.id, publishedAt: processed.publishedAt || new Date() } });
       saved++;
     } catch (error: any) {
       if (error?.code === "P2002") skipped++; else throw error;
