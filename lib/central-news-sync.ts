@@ -58,7 +58,7 @@ function classify(text: string, fallback: string) {
   if (/admit|प्रवेश पत्र|प्रवेशपत्र/.test(v)) return "admit-card";
   if (/answer key|model answer|उत्तर कुंजी|आंसर|objection/.test(v)) return "answer-key";
   if (/result|परिणाम|रिजल्ट|merit|cut.?off/.test(v)) return "results";
-  if (/scholarship|छात्रवृत्ति|fellowship/.test(v)) return "scholarship";
+  if (/scholarship|छात्रवृत्ति|fellowship|anuprati|अनुप्रति|coaching/.test(v)) return "scholarship";
   if (/admission|counselling|counseling|प्रवेश|registration/.test(v)) return "admission";
   if (/exam|examination|परीक्षा|syllabus|calendar|schedule|timetable/.test(v)) return "exams";
   if (/recruit|vacancy|career|apply|application|भर्ती|नियुक्ति|apprentice/.test(v)) return "jobs";
@@ -103,6 +103,7 @@ export async function syncCentralOfficialNews() {
     const category = await db.category.findUnique({ where: { slug: article.categorySlug }, select: { id: true } });
     if (!category) continue;
 
+    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true, title: true, description: true, content: true, categoryId: true, publishedAt: true } });
     const processed = processNews(
       {
         title: article.title,
@@ -110,19 +111,17 @@ export async function syncCentralOfficialNews() {
         imageUrl: null,
         sourceName: article.source,
         sourceUrl: article.url,
-        publishedAt: new Date(),
+        publishedAt: existing?.publishedAt || new Date(),
         externalId,
         categorySlug: article.categorySlug
       },
-      `central-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+      existing?.id || `central-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
     );
-
-    const existing = await db.news.findUnique({ where: { externalId }, select: { id: true, title: true, description: true, content: true, categoryId: true } });
 
     if (existing) {
       const changed = existing.title !== processed.title || existing.description !== processed.description || existing.content !== processed.content || existing.categoryId !== category.id;
       if (!changed) { skipped++; continue; }
-      await db.news.update({ where: { id: existing.id }, data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, categoryId: category.id, status: "PUBLISHED", publishedAt: processed.publishedAt || new Date() } });
+      await db.news.update({ where: { id: existing.id }, data: { title: processed.title, slug: processed.slug, description: processed.description, content: processed.content, imageUrl: processed.imageUrl, sourceName: processed.sourceName, sourceUrl: processed.sourceUrl, categoryId: category.id, status: "PUBLISHED", publishedAt: existing.publishedAt || processed.publishedAt || new Date() } });
       updated++;
       continue;
     }
