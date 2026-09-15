@@ -122,5 +122,12 @@ export async function saveIndiaNews() {
     } catch (error) { console.error(`Unable to save: ${article.title}`, error); }
   }
 
-  return { fetched: articles.length, saved, skipped, updated };
+  // Only mark the automatic feed as healthy after the complete source pass finishes.
+  await db.siteSettings.upsert({
+    where: { id: "default" },
+    update: { lastSyncAt: new Date() },
+    create: { id: "default", siteName: "Student Update", lastSyncAt: new Date() },
+  });
+
+  return { fetched: articles.length, saved, skipped, updated, syncedAt: new Date().toISOString() };
 }
