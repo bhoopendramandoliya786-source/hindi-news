@@ -28,12 +28,10 @@ function slug(value: string) {
 
 export function buildEntityKey(title: string, sourceName?: string | null) {
   let value = normalize(title);
-  for (const stage of STAGE_WORDS) {
-    value = value.replace(new RegExp(`\\b${stage.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\b`, "giu"), " ");
-  }
+  for (const stage of STAGE_WORDS) value = value.split(stage).join(" ");
   if (sourceName) {
     const source = normalize(sourceName);
-    if (source.length >= 3) value = value.replace(new RegExp(`\\b${source.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\\\$&")}\\b`, "giu"), " ");
+    if (source.length >= 3) value = value.split(source).join(" ");
   }
   const tokens = value.split(" ").filter(Boolean).filter((token) => !STOP_WORDS.has(token));
   const meaningful = tokens.filter((token) => token.length >= 2);
