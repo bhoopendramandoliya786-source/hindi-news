@@ -52,6 +52,7 @@ model News {
   id           String     @id @default(cuid())
   title        String
   slug         String     @unique
+  entityKey    String?
   description  String?
   content      String?
   imageUrl     String?
@@ -75,6 +76,7 @@ model News {
   category     Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@index([categoryId])
+  @@index([entityKey])
   @@index([language])
   @@index([status])
   @@index([publishedAt])
@@ -102,7 +104,7 @@ model SiteSettings {
   websiteUrl      String?
   facebookUrl     String?
   instagramUrl    String?
-  youtubeUrl      String?
+  youtubeUrl     String?
   breakingEnabled Boolean  @default(true)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
