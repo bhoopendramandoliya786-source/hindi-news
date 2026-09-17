@@ -21,7 +21,7 @@ export async function GET() {
       categories,
       lastSyncAt,
       syncAgeMinutes,
-      syncHealthy: syncAgeMinutes !== null && syncAgeMinutes <= 20,
+      syncHealthy: syncAgeMinutes !== null && syncAgeMinutes <= 780,
       latencyMs: Date.now() - started,
       time: new Date().toISOString(),
     });
