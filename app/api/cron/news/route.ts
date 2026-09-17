@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { saveIndiaNews } from "@/lib/news-saver";
 import { seedCategories } from "@/lib/category-seeder";
+import { monitorCentralOfficialSources } from "@/lib/central-official-monitor";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -37,8 +38,9 @@ export async function GET(request: Request) {
   try {
     await seedCategories();
     const result = await saveIndiaNews();
-    if (result.saved > 0 || result.updated > 0) revalidateStudentPages();
-    return NextResponse.json({ success: true, message: "Student information sync completed.", result, syncedAt: new Date().toISOString() });
+    const central = await monitorCentralOfficialSources();
+    if (result.saved > 0 || result.updated > 0 || central.saved > 0 || central.updated > 0) revalidateStudentPages();
+    return NextResponse.json({ success: true, message: "Student information sync completed.", result, central, syncedAt: new Date().toISOString() });
   } catch (error) {
     console.error("Student information sync failed:", error);
     return NextResponse.json({ success: false, message: "Student information sync failed." }, { status: 500 });
