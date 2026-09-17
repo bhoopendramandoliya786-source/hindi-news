@@ -20,10 +20,16 @@ const getEntities = cache(async () => {
   return buildStudentEntities([...grouped.values()], "student-updates").slice(0, 120);
 });
 
+const getSyncTime = cache(async () => {
+  try { return (await db.siteSettings.findUnique({ where: { id: "default" }, select: { lastSyncAt: true } }))?.lastSyncAt || null; }
+  catch { return null; }
+});
+
 export default async function StudentWorkIndex() {
   let entities: Awaited<ReturnType<typeof getEntities>> = [];
   let error = false;
   try { entities = await getEntities(); } catch (e) { error = true; console.error("Student master index failed", e); }
+  const lastSyncAt = await getSyncTime();
 
   return (
     <main className="min-h-screen bg-gray-50 py-8">
@@ -35,13 +41,14 @@ export default async function StudentWorkIndex() {
           <div className="mt-5 flex flex-wrap gap-2">
             <Link href="/latest" className="rounded-xl bg-white px-4 py-3 text-sm font-black text-red-700">आज के latest updates</Link>
             <Link href="/search" className="rounded-xl bg-gray-950 px-4 py-3 text-sm font-black text-white">अपना काम खोजें</Link>
+            {lastSyncAt && <span className="rounded-xl bg-white/15 px-4 py-3 text-xs font-bold">Auto sync: {new Date(lastSyncAt).toLocaleString("hi-IN", { dateStyle: "medium", timeStyle: "short" })}</span>}
           </div>
         </div>
 
         <section className="mt-7 rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div><p className="text-xs font-black uppercase tracking-wider text-red-600">Live master list</p><h2 className="text-2xl font-black">एक काम → एक पूरी timeline</h2></div>
-            <p className="text-xs text-gray-500">Verified published updates से अपने-आप बनती है</p>
+            <p className="text-xs text-gray-500">Official-source sync से अपने-आप बनती है</p>
           </div>
           {error ? <div className="mt-5 rounded-xl bg-amber-50 p-4 text-sm font-semibold text-gray-700">Master list अभी database से नहीं पढ़ पाई। थोड़ी देर बाद फिर खोलें।</div> : entities.length ? <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {entities.map((entity) => <Link key={entity.key} href={`/student-work/${entity.key}`} className="group rounded-2xl border border-gray-100 bg-gray-50 p-5 transition hover:-translate-y-0.5 hover:border-red-200 hover:bg-red-50">
