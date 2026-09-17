@@ -10,23 +10,13 @@ interface Props { params: Promise<{ key: string }> }
 export const revalidate = 60;
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://hindi-news-omega.vercel.app").replace(/\/$/, "");
 
-// Keep the master page query bounded and flat. The old category->news nested
-// query could become expensive as the site grew and was a likely source of
-// intermittent 5xx responses on Googlebot crawls.
 const getPublishedNews = cache(async () => db.news.findMany({
   where: { status: "PUBLISHED" },
   orderBy: { publishedAt: "desc" },
   take: 2000,
   select: {
-    id: true,
-    slug: true,
-    title: true,
-    description: true,
-    imageUrl: true,
-    sourceName: true,
-    sourceUrl: true,
-    publishedAt: true,
-    createdAt: true,
+    id: true, slug: true, title: true, description: true, imageUrl: true,
+    sourceName: true, sourceUrl: true, publishedAt: true, createdAt: true,
     category: { select: { name: true, slug: true } },
   },
 }));
@@ -85,6 +75,7 @@ export default async function StudentWorkPage({ params }: Props) {
 
   matches.sort((a, b) => dateValue(b.publishedAt || b.createdAt) - dateValue(a.publishedAt || a.createdAt));
   const first = matches[0];
+  const latestUpdate = matches[0];
   const entityName = getStudentEntityName(first.title);
   const context = getStudentContext(first.categorySlug, entityName);
   const lifecycle = LIFECYCLE.map((stage, index) => {
@@ -94,9 +85,8 @@ export default async function StudentWorkPage({ params }: Props) {
     return { ...stage, index: index + 1, items, latest: items[0] || null };
   });
   const activeStages = lifecycle.filter((stage) => stage.latest);
-  const nextStage = activeStages[activeStages.length - 1] || null;
-  const nextItem = nextStage?.latest || first;
-  const nextAction = nextStage?.label || context.actionLabel || "नया official update देखें";
+  const latestStage = activeStages.find((stage) => stage.latest?.id === latestUpdate.id) || null;
+  const latestStageLabel = latestStage?.label || context.label;
   const breadcrumb = {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
@@ -120,15 +110,15 @@ export default async function StudentWorkPage({ params }: Props) {
           <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-red-100">किसका update?</p><p className="mt-1 font-black">{entityName}</p></div>
           <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-red-100">जुड़े updates</p><p className="mt-1 text-2xl font-black">{matches.length}</p></div>
           <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-red-100">मिले stages</p><p className="mt-1 text-2xl font-black">{activeStages.length}/{LIFECYCLE.length}</p></div>
-          <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-red-100">अभी क्या करें?</p><p className="mt-1 font-black">{nextAction}</p></div>
+          <div className="rounded-2xl bg-white/10 p-4"><p className="text-xs font-bold text-red-100">अभी क्या करें?</p><p className="mt-1 font-black">{latestStageLabel}</p></div>
         </div>
       </section>
 
       <section className="mt-6 rounded-2xl border border-red-100 bg-red-50 p-5">
-        <p className="text-xs font-black uppercase tracking-wider text-red-600">अभी क्या करें?</p>
-        <h2 className="mt-1 text-xl font-black">{nextAction}</h2>
-        <p className="mt-2 text-sm leading-6 text-gray-700">सबसे नया verified stage खोलें। अंतिम आवेदन, डाउनलोड, objection, result या status official source पर verify करें।</p>
-        <Link href={`/news/${nextItem.slug}`} className="mt-4 inline-flex rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white">सबसे नया update खोलें →</Link>
+        <p className="text-xs font-black uppercase tracking-wider text-red-600">सबसे नया verified update</p>
+        <h2 className="mt-1 text-xl font-black">{latestStageLabel}</h2>
+        <p className="mt-2 text-sm leading-6 text-gray-700">अभी उपलब्ध सबसे नए official-source update को पहले खोलें। अंतिम आवेदन, डाउनलोड, objection, result या status official source पर ही verify करें।</p>
+        <Link href={`/news/${latestUpdate.slug}`} className="mt-4 inline-flex rounded-xl bg-red-600 px-5 py-3 text-sm font-black text-white">सबसे नया update खोलें →</Link>
       </section>
 
       <AdsterraNative />
