@@ -24,7 +24,7 @@ export default function AutoSystemBadge() {
   }, []);
 
   const text = state === "ok"
-    ? `ऑटो सिस्टम चालू • official sync लगभग हर 5 मिनट • ${age ?? 0} मिनट पहले${published !== null ? ` • ${published.toLocaleString("hi-IN")} updates` : ""}`
+    ? `ऑटो सिस्टम चालू • official monitoring अपने तय schedule पर • ${age ?? 0} मिनट पहले${published !== null ? ` • ${published.toLocaleString("hi-IN")} updates` : ""}`
     : state === "stale"
       ? `ऑटो सिस्टम चालू • पिछला sync ${age ?? "?"} मिनट पहले • अगला sync अपने आप होगा`
       : state === "down"
